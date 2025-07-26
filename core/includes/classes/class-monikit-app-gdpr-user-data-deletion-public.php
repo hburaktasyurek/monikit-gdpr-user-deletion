@@ -584,20 +584,483 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 	 * @return	array	Result array
 	 */
 	private function process_account_deletion( $email ) {
-		// This is where you would integrate with your Keycloak API or other user management system
-		// For now, we'll just return success
+		// Get Keycloak settings
+		$settings = MONIGPDR()->admin->get_settings();
 		
-		// You can add your Keycloak API integration here
-		// Example:
-		// $keycloak_result = $this->delete_user_from_keycloak( $email );
+		// Check if Keycloak is configured
+		if ( empty( $settings['keycloak_base_url'] ) || 
+			 empty( $settings['keycloak_realm'] ) || 
+			 empty( $settings['keycloak_client_id'] ) || 
+			 empty( $settings['keycloak_admin_username'] ) || 
+			 empty( $settings['keycloak_admin_password'] ) ) {
+			
+			error_log( 'Monikit GDPR: Keycloak settings not configured for user deletion' );
+			return array(
+				'success' => false,
+				'message' => __( 'User management system not configured. Please contact administrator.', 'monikit-app-gdpr-user-data-deletion' )
+			);
+		}
 		
-		// Log the deletion request
-		error_log( sprintf( 'Account deletion requested for email: %s', $email ) );
+		try {
+			// Delete user from Keycloak
+			$deletion_result = $this->delete_user_from_keycloak( $email, $settings );
+			
+			if ( $deletion_result['success'] ) {
+				// Log successful deletion
+				error_log( sprintf( 'Monikit GDPR: User account successfully deleted for email: %s', $email ) );
+				
+				return array(
+					'success' => true,
+					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			} else {
+				// Log deletion failure
+				error_log( sprintf( 'Monikit GDPR: Failed to delete user account for email: %s. Error: %s', $email, $deletion_result['message'] ) );
+				
+				return array(
+					'success' => false,
+					'message' => $deletion_result['message']
+				);
+			}
+			
+		} catch ( Exception $e ) {
+			// Log exception
+			error_log( sprintf( 'Monikit GDPR: Exception during user deletion for email: %s. Error: %s', $email, $e->getMessage() ) );
+			
+			return array(
+				'success' => false,
+				'message' => __( 'An error occurred while deleting your account. Please try again or contact support.', 'monikit-app-gdpr-user-data-deletion' )
+			);
+		}
+	}
+
+	/**
+	 * Delete user from Keycloak
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$email	Email address
+	 * @param	array	$settings	Keycloak settings
+	 * @return	array	Result array
+	 */
+	private function delete_user_from_keycloak( $email, $settings ) {
+		// Normalize the base URL
+		$base_url = rtrim( $settings['keycloak_base_url'], '/' );
+		$realm = $settings['keycloak_realm'];
+		$client_id = $settings['keycloak_client_id'];
+		$client_secret = $settings['keycloak_client_secret'];
+		$admin_username = $settings['keycloak_admin_username'];
+		$admin_password = $settings['keycloak_admin_password'];
 		
-		return array(
-			'success' => true,
-			'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' )
+		try {
+			// Step 1: Get admin access token with retry logic
+			$access_token = $this->get_keycloak_admin_token_with_retry( $base_url, $realm, $client_id, $client_secret, $admin_username, $admin_password );
+			
+			if ( ! $access_token ) {
+				return array(
+					'success' => false,
+					'message' => __( 'Failed to authenticate with user management system.', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			}
+			
+			// Step 2: Find user by email with token refresh if needed
+			$user_id = $this->find_keycloak_user_by_email_with_retry( $base_url, $realm, $access_token, $email, $client_id, $client_secret, $admin_username, $admin_password );
+			
+			if ( ! $user_id ) {
+				return array(
+					'success' => false,
+					'message' => __( 'User account not found.', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			}
+			
+			// Step 3: Delete the user with token refresh if needed
+			$delete_result = $this->delete_keycloak_user_with_retry( $base_url, $realm, $access_token, $user_id, $client_id, $client_secret, $admin_username, $admin_password );
+			
+			if ( $delete_result ) {
+				return array(
+					'success' => true,
+					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			} else {
+				return array(
+					'success' => false,
+					'message' => __( 'Failed to delete user account.', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			}
+			
+		} catch ( Exception $e ) {
+			error_log( 'Monikit GDPR: Keycloak API error: ' . $e->getMessage() );
+			return array(
+				'success' => false,
+				'message' => __( 'Error communicating with user management system.', 'monikit-app-gdpr-user-data-deletion' )
+			);
+		}
+	}
+	
+	/**
+	 * Get Keycloak admin access token with retry logic
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$client_id	Client ID
+	 * @param	string	$client_secret	Client secret
+	 * @param	string	$username	Admin username
+	 * @param	string	$password	Admin password
+	 * @return	string|false	Access token or false on failure
+	 */
+	private function get_keycloak_admin_token_with_retry( $base_url, $realm, $client_id, $client_secret, $username, $password ) {
+		$max_retries = 3;
+		$retry_count = 0;
+		
+		while ( $retry_count < $max_retries ) {
+			try {
+				$token = $this->get_keycloak_admin_token( $base_url, $realm, $client_id, $client_secret, $username, $password );
+				
+				if ( $token ) {
+					return $token;
+				}
+				
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					error_log( sprintf( 'Monikit GDPR: Token request failed, retrying (%d/%d)...', $retry_count, $max_retries ) );
+					sleep( 1 ); // Wait 1 second before retry
+				}
+				
+			} catch ( Exception $e ) {
+				error_log( 'Monikit GDPR: Exception during token request: ' . $e->getMessage() );
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					sleep( 1 );
+				}
+			}
+		}
+		
+		error_log( 'Monikit GDPR: Failed to get access token after ' . $max_retries . ' attempts' );
+		return false;
+	}
+	
+	/**
+	 * Build Keycloak URL with proper /auth handling
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$path	Path to append
+	 * @return	string	Complete URL
+	 */
+	private function build_keycloak_url( $base_url, $path ) {
+		// Normalize base URL
+		$base_url = rtrim( $base_url, '/' );
+		
+		// Handle both /auth and non-/auth URLs
+		if ( strpos( $base_url, '/auth' ) !== false ) {
+			return $base_url . '/' . ltrim( $path, '/' );
+		} else {
+			return $base_url . '/auth/' . ltrim( $path, '/' );
+		}
+	}
+	
+	/**
+	 * Get Keycloak admin access token
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$client_id	Client ID
+	 * @param	string	$client_secret	Client secret
+	 * @param	string	$username	Admin username
+	 * @param	string	$password	Admin password
+	 * @return	string|false	Access token or false on failure
+	 */
+	private function get_keycloak_admin_token( $base_url, $realm, $client_id, $client_secret, $username, $password ) {
+		// Use master realm for admin authentication (like the admin test does)
+		$auth_realm = 'master';
+		
+		// Build token URL using helper method
+		$token_url = $this->build_keycloak_url( $base_url, 'realms/' . $auth_realm . '/protocol/openid-connect/token' );
+		
+		$body = array(
+			'grant_type' => 'password',
+			'client_id' => $client_id,
+			'client_secret' => $client_secret,
+			'username' => $username,
+			'password' => $password
 		);
+		
+		$response = wp_remote_post( $token_url, array(
+			'body' => $body,
+			'timeout' => 30,
+			'headers' => array(
+				'Content-Type' => 'application/x-www-form-urlencoded',
+				'User-Agent' => 'Monikit-Plugin/1.0'
+			),
+			'sslverify' => true,
+			'httpversion' => '1.1'
+		));
+		
+		if ( is_wp_error( $response ) ) {
+			error_log( 'Monikit GDPR: Token request failed: ' . $response->get_error_message() );
+			return false;
+		}
+		
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+		
+		// Log the response for debugging (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( sprintf( 'Monikit GDPR: Token response - Status: %d, Body: %s', $status_code, $body ) );
+		}
+		
+		if ( $status_code === 200 && isset( $data['access_token'] ) ) {
+			return $data['access_token'];
+		}
+		
+		// Log specific error details
+		if ( isset( $data['error_description'] ) ) {
+			error_log( 'Monikit GDPR: Token error: ' . $data['error_description'] );
+		} elseif ( isset( $data['error'] ) ) {
+			error_log( 'Monikit GDPR: Token error: ' . $data['error'] );
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Find Keycloak user by email with token refresh if needed
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$access_token	Admin access token
+	 * @param	string	$email	User email
+	 * @param	string	$client_id	Client ID
+	 * @param	string	$client_secret	Client secret
+	 * @param	string	$admin_username	Admin username
+	 * @param	string	$admin_password	Admin password
+	 * @return	string|false	User ID or false if not found
+	 */
+	private function find_keycloak_user_by_email_with_retry( $base_url, $realm, $access_token, $email, $client_id, $client_secret, $admin_username, $admin_password ) {
+		$max_retries = 2;
+		$retry_count = 0;
+		$current_token = $access_token;
+		
+		while ( $retry_count < $max_retries ) {
+			try {
+				$user_id = $this->find_keycloak_user_by_email( $base_url, $realm, $current_token, $email );
+				
+				if ( $user_id !== false ) {
+					return $user_id;
+				}
+				
+				// If user not found, try refreshing token and retry once
+				if ( $retry_count < $max_retries - 1 ) {
+					error_log( 'Monikit GDPR: User not found, refreshing token and retrying...' );
+					$current_token = $this->get_keycloak_admin_token( $base_url, $realm, $client_id, $client_secret, $admin_username, $admin_password );
+					if ( ! $current_token ) {
+						error_log( 'Monikit GDPR: Failed to refresh token for user search' );
+						return false;
+					}
+				}
+				
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					sleep( 1 ); // Wait 1 second before retry
+				}
+				
+			} catch ( Exception $e ) {
+				error_log( 'Monikit GDPR: Exception during user search: ' . $e->getMessage() );
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					sleep( 1 );
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Find Keycloak user by email
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$access_token	Admin access token
+	 * @param	string	$email	User email
+	 * @return	string|false	User ID or false if not found
+	 */
+	private function find_keycloak_user_by_email( $base_url, $realm, $access_token, $email ) {
+		// Build users URL using helper method
+		$users_url = $this->build_keycloak_url( $base_url, 'admin/realms/' . $realm . '/users?email=' . urlencode( $email ) );
+		
+		// Log the URL for debugging (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Monikit GDPR: Searching for user with URL: ' . $users_url );
+		}
+		
+		$response = wp_remote_get( $users_url, array(
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $access_token,
+				'Content-Type' => 'application/json',
+				'User-Agent' => 'Monikit-Plugin/1.0'
+			),
+			'sslverify' => true,
+			'httpversion' => '1.1'
+		));
+		
+		if ( is_wp_error( $response ) ) {
+			error_log( 'Monikit GDPR: User search failed: ' . $response->get_error_message() );
+			return false;
+		}
+		
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$body = wp_remote_retrieve_body( $response );
+		$users = json_decode( $body, true );
+		
+		// Log the response for debugging (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( sprintf( 'Monikit GDPR: User search response - Status: %d, Body: %s', $status_code, $body ) );
+		}
+		
+		if ( $status_code === 200 && is_array( $users ) && count( $users ) > 0 ) {
+			// Return the first user's ID
+			$user_id = $users[0]['id'];
+			error_log( 'Monikit GDPR: User found with ID: ' . $user_id );
+			return $user_id;
+		}
+		
+		error_log( 'Monikit GDPR: User not found or invalid response' );
+		return false;
+	}
+	
+	/**
+	 * Delete Keycloak user with token refresh if needed
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$access_token	Admin access token
+	 * @param	string	$user_id	User ID to delete
+	 * @param	string	$client_id	Client ID
+	 * @param	string	$client_secret	Client secret
+	 * @param	string	$admin_username	Admin username
+	 * @param	string	$admin_password	Admin password
+	 * @return	bool	Success status
+	 */
+	private function delete_keycloak_user_with_retry( $base_url, $realm, $access_token, $user_id, $client_id, $client_secret, $admin_username, $admin_password ) {
+		$max_retries = 2;
+		$retry_count = 0;
+		$current_token = $access_token;
+		
+		while ( $retry_count < $max_retries ) {
+			try {
+				$result = $this->delete_keycloak_user( $base_url, $realm, $current_token, $user_id );
+				
+				if ( $result ) {
+					return true;
+				}
+				
+				// If deletion failed, try refreshing token and retry once
+				if ( $retry_count < $max_retries - 1 ) {
+					error_log( 'Monikit GDPR: User deletion failed, refreshing token and retrying...' );
+					$current_token = $this->get_keycloak_admin_token( $base_url, $realm, $client_id, $client_secret, $admin_username, $admin_password );
+					if ( ! $current_token ) {
+						error_log( 'Monikit GDPR: Failed to refresh token for user deletion' );
+						return false;
+					}
+				}
+				
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					sleep( 1 ); // Wait 1 second before retry
+				}
+				
+			} catch ( Exception $e ) {
+				error_log( 'Monikit GDPR: Exception during user deletion: ' . $e->getMessage() );
+				$retry_count++;
+				if ( $retry_count < $max_retries ) {
+					sleep( 1 );
+				}
+			}
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Delete Keycloak user
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$base_url	Keycloak base URL
+	 * @param	string	$realm	Realm name
+	 * @param	string	$access_token	Admin access token
+	 * @param	string	$user_id	User ID to delete
+	 * @return	bool	Success status
+	 */
+	private function delete_keycloak_user( $base_url, $realm, $access_token, $user_id ) {
+		// Build delete URL using helper method
+		$delete_url = $this->build_keycloak_url( $base_url, 'admin/realms/' . $realm . '/users/' . $user_id );
+		
+		// Log the URL for debugging (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Monikit GDPR: Deleting user with URL: ' . $delete_url );
+		}
+		
+		$response = wp_remote_request( $delete_url, array(
+			'method' => 'DELETE',
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $access_token,
+				'Content-Type' => 'application/json',
+				'User-Agent' => 'Monikit-Plugin/1.0'
+			),
+			'sslverify' => true,
+			'httpversion' => '1.1'
+		));
+		
+		if ( is_wp_error( $response ) ) {
+			error_log( 'Monikit GDPR: User deletion failed: ' . $response->get_error_message() );
+			return false;
+		}
+		
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$response_body = wp_remote_retrieve_body( $response );
+		
+		// Log the response for debugging (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( sprintf( 'Monikit GDPR: Delete user response - Status: %d, Body: %s', $status_code, $response_body ) );
+		}
+		
+		// Keycloak returns 204 No Content on successful deletion
+		if ( $status_code === 204 ) {
+			error_log( 'Monikit GDPR: User deleted successfully' );
+			return true;
+		}
+		
+		// Handle other status codes
+		switch ( $status_code ) {
+			case 404:
+				error_log( 'Monikit GDPR: User not found in Keycloak' );
+				return false;
+			case 403:
+				error_log( 'Monikit GDPR: Insufficient permissions to delete user' );
+				return false;
+			case 401:
+				error_log( 'Monikit GDPR: Authentication failed for user deletion' );
+				return false;
+			default:
+				error_log( 'Monikit GDPR: Unexpected status code for user deletion: ' . $status_code );
+				return false;
+		}
 	}
 
 	/**

@@ -768,8 +768,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 
 		$settings = $_POST['settings'];
 		
-		// Debug: Log the received settings
-		error_log( 'Monikit Debug - Received settings: ' . print_r( $settings, true ) );
+		// Debug: Log the received settings (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Monikit Debug - Received settings: ' . print_r( $settings, true ) );
+		}
 		
 		// Extract Keycloak settings with proper field name handling
 		$base_url = '';
@@ -796,8 +798,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			}
 		}
 		
-		// Debug: Log the extracted values
-		error_log( 'Monikit Debug - Extracted values: base_url=' . $base_url . ', realm=' . $realm . ', client_id=' . $client_id . ', admin_username=' . $admin_username . ', admin_password=' . ( ! empty( $admin_password ) ? 'SET' : 'EMPTY' ) );
+		// Debug: Log the extracted values (only in debug mode)
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'Monikit Debug - Extracted values: base_url=' . $base_url . ', realm=' . $realm . ', client_id=' . $client_id . ', admin_username=' . $admin_username . ', admin_password=' . ( ! empty( $admin_password ) ? 'SET' : 'EMPTY' ) );
+		}
 
 		// Basic validation with detailed error messages
 		$missing_fields = array();
