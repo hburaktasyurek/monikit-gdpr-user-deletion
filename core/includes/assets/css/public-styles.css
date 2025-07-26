@@ -1,0 +1,507 @@
+/* Monikit Public Deletion Form Styles - Shortcode Compatible */
+
+/* Reset styles only for our form elements */
+.monigpdr-deletion-form-wrapper * {
+    box-sizing: border-box;
+}
+
+/* Main wrapper - scoped to our form only */
+.monigpdr-deletion-form-wrapper {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    max-width: 100%;
+    margin: 20px 0;
+}
+
+/* Default style - full form with background */
+.monigpdr-style-default .monigpdr-deletion-form-wrapper {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.monigpdr-style-default .monigpdr-deletion-form-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+}
+
+.monigpdr-style-default .monigpdr-form-container {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Form header */
+.monigpdr-form-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.monigpdr-form-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: #2d3748;
+}
+
+.monigpdr-style-default .monigpdr-form-title {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.monigpdr-form-subtitle {
+    font-size: 1rem;
+    color: #718096;
+    margin: 0;
+    line-height: 1.6;
+}
+
+/* Form container */
+.monigpdr-form-container {
+    margin-bottom: 20px;
+}
+
+.monigpdr-deletion-form {
+    width: 100%;
+}
+
+/* Form steps */
+.monigpdr-form-step {
+    animation: monigpdr-fadeIn 0.3s ease-in-out;
+}
+
+@keyframes monigpdr-fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form groups */
+.monigpdr-form-group {
+    margin-bottom: 20px;
+}
+
+.monigpdr-form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+/* Input styles */
+.monigpdr-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+    color: #333;
+}
+
+.monigpdr-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.monigpdr-input::placeholder {
+    color: #a0aec0;
+}
+
+.monigpdr-code-input {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+.monigpdr-help-text {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+/* Form actions */
+.monigpdr-form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+/* Button styles */
+.monigpdr-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+}
+
+.monigpdr-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.monigpdr-btn:hover::before {
+    left: 100%;
+}
+
+.monigpdr-btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.monigpdr-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.monigpdr-btn-secondary {
+    background: #f7fafc;
+    color: #4a5568;
+    border: 2px solid #e2e8f0;
+}
+
+.monigpdr-btn-secondary:hover {
+    background: #edf2f7;
+    border-color: #cbd5e0;
+}
+
+.monigpdr-btn-danger {
+    background: linear-gradient(135deg, #e53e3e, #c53030);
+    color: white;
+}
+
+.monigpdr-btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(229, 62, 62, 0.3);
+}
+
+.monigpdr-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Final confirmation */
+.monigpdr-final-confirmation {
+    text-align: center;
+    padding: 20px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.monigpdr-warning-icon {
+    font-size: 2rem;
+    margin-bottom: 16px;
+}
+
+.monigpdr-final-confirmation h3 {
+    color: #856404;
+    margin: 0 0 12px 0;
+    font-size: 1.2rem;
+}
+
+.monigpdr-final-confirmation p {
+    color: #856404;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+}
+
+/* Checkbox styles */
+.monigpdr-checkbox-group {
+    margin: 16px 0;
+}
+
+.monigpdr-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.monigpdr-checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.monigpdr-checkbox-custom {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #cbd5e0;
+    border-radius: 4px;
+    background: white;
+    position: relative;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.monigpdr-checkbox-label input[type="checkbox"]:checked + .monigpdr-checkbox-custom {
+    background: #667eea;
+    border-color: #667eea;
+}
+
+.monigpdr-checkbox-label input[type="checkbox"]:checked + .monigpdr-checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Messages */
+.monigpdr-messages {
+    margin-top: 20px;
+}
+
+.monigpdr-message {
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    animation: monigpdr-slideIn 0.3s ease-out;
+    font-size: 0.9rem;
+}
+
+@keyframes monigpdr-slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.monigpdr-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.monigpdr-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.monigpdr-message.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* Loading state */
+.monigpdr-loading {
+    position: relative;
+    color: transparent !important;
+}
+
+.monigpdr-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: monigpdr-spin 1s linear infinite;
+}
+
+@keyframes monigpdr-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .monigpdr-deletion-form-wrapper {
+        margin: 15px 0;
+    }
+    
+    .monigpdr-style-default .monigpdr-deletion-form-wrapper {
+        padding: 20px;
+    }
+    
+    .monigpdr-style-default .monigpdr-form-container {
+        padding: 20px;
+    }
+    
+    .monigpdr-form-title {
+        font-size: 1.5rem;
+    }
+    
+    .monigpdr-form-actions {
+        flex-direction: column;
+    }
+    
+    .monigpdr-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .monigpdr-input {
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+}
+
+@media (max-width: 480px) {
+    .monigpdr-style-default .monigpdr-deletion-form-wrapper {
+        padding: 15px;
+    }
+    
+    .monigpdr-style-default .monigpdr-form-container {
+        padding: 15px;
+    }
+    
+    .monigpdr-form-title {
+        font-size: 1.3rem;
+    }
+    
+    .monigpdr-form-subtitle {
+        font-size: 0.9rem;
+    }
+}
+
+/* Focus styles for accessibility */
+.monigpdr-input:focus,
+.monigpdr-btn:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .monigpdr-deletion-form-wrapper {
+        border: 2px solid #000;
+    }
+    
+    .monigpdr-input {
+        border: 2px solid #000;
+    }
+    
+    .monigpdr-btn {
+        border: 2px solid #000;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .monigpdr-btn,
+    .monigpdr-input,
+    .monigpdr-checkbox-custom {
+        transition: none;
+    }
+    
+    .monigpdr-btn::before {
+        display: none;
+    }
+    
+    .monigpdr-loading::after {
+        animation: none;
+    }
+}
+
+/* Minimal style - clean, minimal appearance */
+.monigpdr-style-minimal .monigpdr-deletion-form-wrapper {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+.monigpdr-style-minimal .monigpdr-deletion-form-wrapper::before {
+    display: none;
+}
+
+.monigpdr-style-minimal .monigpdr-form-header {
+    display: none;
+}
+
+.monigpdr-style-minimal .monigpdr-form-container {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+.monigpdr-style-minimal .monigpdr-input {
+    border: 1px solid #ddd;
+    background: white;
+}
+
+/* Card style - card-like appearance */
+.monigpdr-style-card .monigpdr-deletion-form-wrapper {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.monigpdr-style-card .monigpdr-deletion-form-wrapper::before {
+    display: none;
+}
+
+.monigpdr-style-card .monigpdr-form-container {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+.monigpdr-style-card .monigpdr-form-title {
+    font-size: 1.25rem;
+    margin-bottom: 8px;
+}
+
+.monigpdr-style-card .monigpdr-form-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+} 

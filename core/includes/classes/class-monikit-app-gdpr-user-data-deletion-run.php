@@ -73,6 +73,8 @@ class Monikit_App_Gdpr_User_Data_Deletion_Run{
 		add_action( 'plugin_action_links_' . MONIGPDR_PLUGIN_BASE, array( $this, 'add_plugin_action_link' ), 20 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_backend_scripts_and_styles' ), 20 );
 		add_action( 'plugins_loaded', array( $this, 'add_wp_webhooks_integrations' ), 9 );
+		
+
 	
 	}
 
@@ -117,6 +119,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Run{
 			'plugin_name'   	=> __( MONIGPDR_NAME, 'monikit-app-gdpr-user-data-deletion' ),
 		));
 	}
+
+
+
+
 
 	/**
 	 * ####################

@@ -53,4 +53,18 @@ class Monikit_App_Gdpr_User_Data_Deletion_Helpers{
 	  * HELPER COMMENT END
 	  */
 
+
+
+	/**
+	 * Check if public deletion page is enabled
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	bool	True if enabled
+	 */
+	public function is_public_deletion_enabled() {
+		$settings = MONIGPDR()->admin->get_settings();
+		return isset( $settings['enable_public_deletion'] ) && $settings['enable_public_deletion'] === '1';
+	}
+
 }

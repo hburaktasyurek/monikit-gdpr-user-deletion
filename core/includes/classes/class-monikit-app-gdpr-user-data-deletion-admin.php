@@ -97,6 +97,14 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'monikit_settings'
 		);
 
+		// Public Deletion Form Section
+		add_settings_section(
+			'public_deletion_section',
+			__( 'Public Deletion Form', 'monikit-app-gdpr-user-data-deletion' ),
+			array( $this, 'public_deletion_section_callback' ),
+			'monikit_settings'
+		);
+
 		// Keycloak Fields
 		$keycloak_fields = array(
 			'keycloak_base_url' => __( 'Keycloak Base URL', 'monikit-app-gdpr-user-data-deletion' ),
@@ -168,6 +176,21 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 				'description' => $this->get_field_description( 'default_language' )
 			)
 		);
+
+		// Public Deletion Form Field
+		add_settings_field(
+			'enable_public_deletion',
+			__( 'Enable Public Deletion Form', 'monikit-app-gdpr-user-data-deletion' ),
+			array( $this, 'render_field' ),
+			'monikit_settings',
+			'public_deletion_section',
+			array(
+				'field_key' => 'enable_public_deletion',
+				'field_type' => 'checkbox',
+				'required' => false,
+				'description' => $this->get_field_description( 'enable_public_deletion' )
+			)
+		);
 	}
 
 	/**
@@ -199,6 +222,16 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 					esc_attr( $field_key ),
 					esc_attr( $current_value ),
 					$required ? 'required' : ''
+				);
+				break;
+
+			case 'checkbox':
+				printf(
+					'<input type="checkbox" id="%s" name="%s[%s]" value="1" %s />',
+					esc_attr( $field_key ),
+					esc_attr( $this->option_name ),
+					esc_attr( $field_key ),
+					checked( $current_value, '1', false )
 				);
 				break;
 
@@ -265,6 +298,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'email_subject_de' => __( 'Email subject for German users', 'monikit-app-gdpr-user-data-deletion' ),
 			'email_html_de' => __( 'HTML email template for German users. Use {confirmation_link} and {confirmation_code} placeholders.', 'monikit-app-gdpr-user-data-deletion' ),
 			'default_language' => __( 'Default language for the plugin', 'monikit-app-gdpr-user-data-deletion' ),
+			'enable_public_deletion' => __( 'Enable the public deletion form for users to request account deletion using the shortcode [monigpdr_deletion_form]', 'monikit-app-gdpr-user-data-deletion' ),
 		);
 
 		return isset( $descriptions[ $field_key ] ) ? $descriptions[ $field_key ] : '';
@@ -331,6 +365,32 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 
 	public function language_section_callback() {
 		echo '<p>' . esc_html__( 'Configure language settings for the plugin.', 'monikit-app-gdpr-user-data-deletion' ) . '</p>';
+	}
+
+	public function public_deletion_section_callback() {
+		echo '<p>' . esc_html__( 'Configure the public deletion form settings. This allows users to request account deletion using the shortcode.', 'monikit-app-gdpr-user-data-deletion' ) . '</p>';
+		
+		$settings = $this->get_settings();
+		$is_enabled = isset( $settings['enable_public_deletion'] ) ? $settings['enable_public_deletion'] : '0';
+		
+		if ( $is_enabled === '1' ) {
+			echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
+			echo '<strong>' . esc_html__( '✅ Public Deletion Form is Enabled', 'monikit-app-gdpr-user-data-deletion' ) . '</strong><br>';
+			echo esc_html__( 'You can now use the shortcode', 'monikit-app-gdpr-user-data-deletion' ) . ' <code>[monigpdr_deletion_form]</code> ' . esc_html__( 'to embed the deletion form anywhere on your site.', 'monikit-app-gdpr-user-data-deletion' );
+			echo '</div>';
+			
+			// Add shortcode examples
+			echo '<div style="background: #d1ecf1; border: 1px solid #bee5eb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
+			echo '<strong>' . esc_html__( '📝 Shortcode Examples', 'monikit-app-gdpr-user-data-deletion' ) . '</strong><br>';
+			echo '<code>[monigpdr_deletion_form]</code> - ' . esc_html__( 'Basic form', 'monikit-app-gdpr-user-data-deletion' ) . '<br>';
+			echo '<code>[monigpdr_deletion_form style="minimal"]</code> - ' . esc_html__( 'Minimal style', 'monikit-app-gdpr-user-data-deletion' ) . '<br>';
+			echo '<code>[monigpdr_deletion_form title="Delete Account"]</code> - ' . esc_html__( 'Custom title', 'monikit-app-gdpr-user-data-deletion' );
+			echo '</div>';
+		} else {
+			echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
+			echo '<strong>' . esc_html__( '❌ Public Deletion Form is Disabled', 'monikit-app-gdpr-user-data-deletion' ) . '</strong>';
+			echo '</div>';
+		}
 	}
 
 	/**
@@ -424,6 +484,13 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		// Language setting
 		if ( isset( $input['default_language'] ) ) {
 			$sanitized_input['default_language'] = sanitize_text_field( $input['default_language'] );
+		}
+
+		// Public deletion form settings
+		if ( isset( $input['enable_public_deletion'] ) ) {
+			$sanitized_input['enable_public_deletion'] = '1';
+		} else {
+			$sanitized_input['enable_public_deletion'] = '0';
 		}
 
 		return $sanitized_input;
@@ -555,6 +622,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'email_html_en' => $this->get_default_email_template_en(),
 			'email_subject_de' => __( 'Bestätigen Sie Ihre Datenlöschungsanfrage', 'monikit-app-gdpr-user-data-deletion' ),
 			'email_html_de' => $this->get_default_email_template_de(),
+			'enable_public_deletion' => '0',
 		);
 	}
 

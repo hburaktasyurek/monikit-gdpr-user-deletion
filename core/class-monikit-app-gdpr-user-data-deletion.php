@@ -67,6 +67,15 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 		public $admin;
 
 		/**
+		 * MONIGPDR public object.
+		 *
+		 * @access	public
+		 * @since	1.0.0
+		 * @var		object|Monikit_App_Gdpr_User_Data_Deletion_Public
+		 */
+		public $public;
+
+		/**
 		 * Throw error on object clone.
 		 *
 		 * Cloning instances of the class is forbidden.
@@ -109,6 +118,7 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 				self::$instance->helpers		= new Monikit_App_Gdpr_User_Data_Deletion_Helpers();
 				self::$instance->settings		= new Monikit_App_Gdpr_User_Data_Deletion_Settings();
 				self::$instance->admin		= new Monikit_App_Gdpr_User_Data_Deletion_Admin();
+				self::$instance->public		= new Monikit_App_Gdpr_User_Data_Deletion_Public();
 
 				//Fire the plugin logic
 				new Monikit_App_Gdpr_User_Data_Deletion_Run();
@@ -131,11 +141,12 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 		 * @return  void
 		 */
 		private function includes() {
-			require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-helpers.php';
-			require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-settings.php';
-			require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-admin.php';
+					require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-helpers.php';
+		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-settings.php';
+		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-admin.php';
+		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-public.php';
 
-			require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-run.php';
+		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-run.php';
 		}
 
 		/**
