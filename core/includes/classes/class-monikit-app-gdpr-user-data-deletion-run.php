@@ -98,7 +98,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Run{
 	*/
 	public function add_plugin_action_link( $links ) {
 
-		$links['our_shop'] = sprintf( '<a href="%s" title="Custom Link" style="font-weight:700;">%s</a>', 'https://test.test', __( 'Custom Link', 'monikit-app-gdpr-user-data-deletion' ) );
+		$links['plugin_settings'] = sprintf( '<a href="%s" title="Plugin Settings" style="font-weight:700;">%s</a>', admin_url( 'admin.php?page=monikit_settings' ), __( 'Plugin Settings', 'monikit-app-gdpr-user-data-deletion' ) );
 
 		return $links;
 	}
