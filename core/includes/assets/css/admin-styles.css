@@ -98,6 +98,15 @@
     border-left-color: #ffb900;
 }
 
+/* Custom warning notification styling */
+.monikit-settings-wrap .notice-warning p {
+    color: #856404;
+}
+
+.monikit-settings-wrap .notice-warning strong {
+    color: #856404;
+}
+
 /* Info message styling */
 .monikit-settings-wrap .notice-info {
     border-left-color: #00a0d2;
@@ -196,4 +205,57 @@
 .monikit-settings-wrap .submit .button-primary:hover {
     background: #005a87;
     border-color: #005a87;
+}
+
+/* Keycloak test section styling */
+.monikit-settings-wrap .keycloak-test-section {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.monikit-settings-wrap .keycloak-test-result {
+    margin-top: 10px;
+}
+
+.monikit-settings-wrap .keycloak-test-result .notice {
+    margin: 0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Test connection button styling */
+.monikit-settings-wrap .test-keycloak-connection {
+    background: #46b450;
+    border-color: #46b450;
+    color: #fff;
+    font-weight: 600;
+}
+
+.monikit-settings-wrap .test-keycloak-connection:hover {
+    background: #389a3f;
+    border-color: #389a3f;
+}
+
+.monikit-settings-wrap .test-keycloak-connection:disabled {
+    background: #ccc;
+    border-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Email preview button styling */
+.monikit-settings-wrap .preview-email-en,
+.monikit-settings-wrap .preview-email-de {
+    background: #f7f7f7;
+    border-color: #ccc;
+    color: #555;
+}
+
+.monikit-settings-wrap .preview-email-en:hover,
+.monikit-settings-wrap .preview-email-de:hover {
+    background: #eee;
+    border-color: #999;
 } 

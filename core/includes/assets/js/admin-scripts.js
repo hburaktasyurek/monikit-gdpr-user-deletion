@@ -95,7 +95,25 @@
          * Initialize form validation
          */
         initFormValidation: function() {
-            $('.monikit-settings-wrap form').on('submit', function(e) {
+            var $form = $('.monikit-settings-wrap form');
+            
+            // Real-time URL validation and formatting hint
+            var $keycloakUrl = $form.find('input[name="monikit_settings[keycloak_base_url]"]');
+            if ($keycloakUrl.length) {
+                $keycloakUrl.on('blur', function() {
+                    var url = $(this).val().trim();
+                    if (url !== '' && !MonikitAdmin.isValidUrl(url)) {
+                        MonikitAdmin.showNotification('Please enter a valid URL for Keycloak Base URL', 'warning');
+                    }
+                });
+                
+                // Show URL format hint if not already present
+                if (!$keycloakUrl.next('.url-format-hint').length) {
+                    $keycloakUrl.after('<p class="description url-format-hint">Format: https://your-keycloak-server.com/ (trailing slash will be added automatically)</p>');
+                }
+            }
+            
+            $form.on('submit', function(e) {
                 var isValid = true;
                 var $form = $(this);
                 
@@ -268,19 +286,46 @@
         },
 
         /**
+         * Show notification in Keycloak test section
+         */
+        showKeycloakTestNotification: function(message, type) {
+            var $resultDiv = $('.keycloak-test-result');
+            
+            // Create notification element
+            var $notification = $('<div class="keycloak-test-notification notice notice-' + type + ' is-dismissible" style="margin: 10px 0; padding: 10px;"><p>' + message + '</p></div>');
+            
+            // Clear previous result and show new one
+            $resultDiv.html($notification).show();
+            
+            // Auto-dismiss after 8 seconds
+            setTimeout(function() {
+                $resultDiv.fadeOut();
+            }, 8000);
+        },
+
+        /**
          * Test Keycloak connection
          */
         testKeycloakConnection: function() {
             var $button = $('.test-keycloak-connection');
             var originalText = $button.text();
             
-            $button.prop('disabled', true).text('Testing...');
+            $button.prop('disabled', true).text('🔐 Testing Token...');
             
-            // Get form data
+            // Get form data - ensure we get all form fields
             var formData = {};
-            $('.monikit-settings-wrap form').serializeArray().forEach(function(item) {
-                formData[item.name] = item.value;
+            $('.monikit-settings-wrap form').find('input, select, textarea').each(function() {
+                var $field = $(this);
+                var name = $field.attr('name');
+                var value = $field.val();
+                
+                if (name && name.indexOf('monikit_settings') !== -1) {
+                    formData[name] = value;
+                }
             });
+            
+            // Debug: Log the form data to console
+            console.log('Form data being sent:', formData);
             
             // Send AJAX request
             $.ajax({
@@ -292,14 +337,21 @@
                     settings: formData
                 },
                 success: function(response) {
+                    console.log('Response:', response);
                     if (response.success) {
-                        MonikitAdmin.showNotification('Keycloak connection successful!', 'success');
+                        MonikitAdmin.showKeycloakTestNotification(response.data, 'success');
                     } else {
-                        MonikitAdmin.showNotification('Keycloak connection failed: ' + response.data, 'error');
+                        // Check if it's a warning (token valid but realm access failed)
+                        if (response.data.indexOf('⚠️') !== -1) {
+                            MonikitAdmin.showKeycloakTestNotification(response.data, 'warning');
+                        } else {
+                            MonikitAdmin.showKeycloakTestNotification(response.data, 'error');
+                        }
                     }
                 },
-                error: function() {
-                    MonikitAdmin.showNotification('Connection test failed. Please try again.', 'error');
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr, status, error);
+                    MonikitAdmin.showKeycloakTestNotification('Connection test failed. Please check your settings and try again.', 'error');
                 },
                 complete: function() {
                     $button.prop('disabled', false).text(originalText);

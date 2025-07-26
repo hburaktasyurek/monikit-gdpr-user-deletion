@@ -9,12 +9,23 @@ This documentation describes the features and usage of the admin settings page f
 ### ✅ Completed Features
 
 #### 🔐 **Keycloak Connection Settings**
-- **Keycloak Base URL**: Keycloak server address *(Required)*
+- **Keycloak Base URL**: Keycloak server address *(Required - Auto-formatted)*
 - **Realm**: Keycloak realm name *(Required)*
 - **Client ID**: Keycloak client ID *(Required)*
 - **Client Secret**: Keycloak client secret (password field) *(Optional)*
 - **Admin Username**: Keycloak admin API username *(Required)*
 - **Admin Password**: Keycloak admin API password (password field) *(Required)*
+
+##### URL Auto-Formatting
+The Keycloak Base URL field automatically normalizes your input to ensure proper formatting:
+- **Protocol**: Automatically adds `https://` if missing
+- **Trailing Slash**: Ensures the URL ends with a single `/`
+- **Flexible Path**: Works with or without `/auth/` in the URL
+- **Examples**:
+  - `keycloak.example.com` → `https://keycloak.example.com/`
+  - `https://keycloak.example.com` → `https://keycloak.example.com/`
+  - `https://keycloak.example.com/auth` → `https://keycloak.example.com/auth/`
+  - `https://keycloak.example.com/auth/` → `https://keycloak.example.com/auth/`
 
 #### 📧 **Email Templates (Multi-language)**
 - **English Email Template**: Subject and HTML body
@@ -38,7 +49,7 @@ This documentation describes the features and usage of the admin settings page f
 - **Form Validation**: Real-time validation with JavaScript
 - **Password Visibility Toggle**: Show/hide button for password fields
 - **Email Preview**: Preview feature to test templates
-- **Keycloak Connection Test**: Connection check to test settings
+- **Keycloak Connection Test**: Real token endpoint testing with access token validation
 - **Required Field Indicators**: Red asterisks (*) for mandatory fields
 
 ## 📁 File Structure
@@ -90,8 +101,8 @@ Activate the plugin in the WordPress admin panel.
 1. **Default Language**: Select English or German
 
 ### 4. Test and Validate
-- **Test Keycloak Connection**: Test your Keycloak connection
-- **Preview Email**: Preview email templates
+- **🔐 Test Keycloak Connection**: Test your Keycloak connection by attempting to retrieve an access token
+- **📧 Preview Email**: Preview email templates
 - **Save Settings**: Save your settings
 
 ## 🔌 API Usage
@@ -147,6 +158,35 @@ These fields are marked with a red asterisk (*) in the admin interface and will 
 
 When the plugin is first installed, professional email templates are automatically created for both English and German.
 
+### Keycloak Connection Testing
+
+The plugin includes a comprehensive two-step Keycloak connection test that validates your configuration:
+
+#### Step 1: Token Retrieval
+1. **Token Endpoint Testing**: Attempts to retrieve an access token from Keycloak's token endpoint
+2. **Credential Validation**: Verifies that admin username/password are correct
+3. **Client Configuration**: Checks that the client ID and secret (if provided) are valid
+4. **Network Connectivity**: Ensures the Keycloak server is reachable
+
+#### Step 2: Realm Access Verification
+1. **User List Retrieval**: Uses the access token to fetch users from the specified realm
+2. **Permission Validation**: Verifies that the client has proper admin permissions
+3. **Realm Existence**: Confirms the realm exists and is accessible
+
+#### Test Process:
+- **Token Endpoint**: `{KEYCLOAK_BASE_URL}/auth/realms/master/protocol/openid-connect/token`
+- **Users Endpoint**: `{KEYCLOAK_BASE_URL}/auth/admin/realms/{REALM}/users`
+- **Token Method**: POST with `application/x-www-form-urlencoded` content type
+- **Users Method**: GET with `Authorization: Bearer {access_token}` header
+- **Success Criteria**: Both token retrieval and user list access succeed
+
+#### Error Handling:
+- **Connection Errors**: Network connectivity issues
+- **Authentication Errors**: Invalid credentials or client configuration
+- **Permission Errors**: Valid token but insufficient permissions (401/403)
+- **Realm Errors**: Realm not found or inaccessible (404)
+- **Server Errors**: Keycloak server issues or configuration problems
+
 ### Security Measures
 
 - All form data is sanitized using `sanitize_text_field()` and `wp_kses_post()`
@@ -169,8 +209,21 @@ When the plugin is first installed, professional email templates are automatical
 
 ### Keycloak Connection Test Fails
 1. Check that your Keycloak server is accessible
-2. Ensure the URL format is correct
-3. Check firewall settings
+2. Ensure the URL format is correct (e.g., `https://your-keycloak-server.com/auth/`)
+3. Verify that the admin credentials are correct
+4. Check that the client ID exists and is configured properly
+5. Ensure the client secret is correct (if required)
+6. Check firewall settings and network connectivity
+7. Verify that the Keycloak server allows password grant type for the client
+
+### Token Valid but Realm Access Fails
+1. **401/403 Errors**: Check that the client has admin permissions in Keycloak
+2. **404 Errors**: Verify the realm name is correct and exists
+3. **Permission Issues**: Ensure the client has the following roles:
+   - `view-users` role for the realm
+   - `query-users` role for the realm
+   - Or `realm-admin` role for full access
+4. **Client Configuration**: Verify the client is configured as a confidential client with proper service account roles
 
 ### Required Field Validation Errors
 1. Fill in all fields marked with red asterisks (*)

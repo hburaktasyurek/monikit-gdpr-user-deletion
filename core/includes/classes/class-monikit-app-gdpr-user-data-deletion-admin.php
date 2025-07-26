@@ -253,7 +253,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	 */
 	private function get_field_description( $field_key ) {
 		$descriptions = array(
-			'keycloak_base_url' => __( 'Example: https://testserver.monikit.com/auth/', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_base_url' => __( 'Example: https://testserver.monikit.com/', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_realm' => __( 'Example: Patient', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_client_id' => __( 'Example: admin-cli', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_client_secret' => __( 'Client secret if required', 'monikit-app-gdpr-user-data-deletion' ),
@@ -304,6 +304,12 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	 */
 	public function keycloak_section_callback() {
 		echo '<p>' . esc_html__( 'Configure your Keycloak connection settings.', 'monikit-app-gdpr-user-data-deletion' ) . '</p>';
+		echo '<div class="keycloak-test-section">';
+		echo '<button type="button" class="button button-secondary test-keycloak-connection" style="margin-top: 10px;">';
+		echo esc_html__( '🔐 Test Keycloak Connection', 'monikit-app-gdpr-user-data-deletion' );
+		echo '</button>';
+		echo '<div class="keycloak-test-result" style="margin-top: 10px; display: none;"></div>';
+		echo '</div>';
 	}
 
 	public function email_templates_section_callback() {
@@ -367,7 +373,14 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 
 		foreach ( $keycloak_fields as $field ) {
 			if ( isset( $input[ $field ] ) ) {
-				$sanitized_input[ $field ] = sanitize_text_field( $input[ $field ] );
+				$value = sanitize_text_field( $input[ $field ] );
+				
+				// Normalize the base URL
+				if ( $field === 'keycloak_base_url' ) {
+					$value = $this->normalize_keycloak_url( $value );
+				}
+				
+				$sanitized_input[ $field ] = $value;
 			}
 		}
 
@@ -442,16 +455,12 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 				<div class="submit">
 					<?php submit_button( __( 'Save Settings', 'monikit-app-gdpr-user-data-deletion' ) ); ?>
 					
-					<button type="button" class="button test-keycloak-connection" style="margin-left: 10px;">
-						<?php esc_html_e( 'Test Keycloak Connection', 'monikit-app-gdpr-user-data-deletion' ); ?>
+					<button type="button" class="button button-secondary preview-email-en" style="margin-left: 10px;">
+						<?php esc_html_e( '📧 Preview English Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
 					</button>
 					
-					<button type="button" class="button preview-email-en" style="margin-left: 10px;">
-						<?php esc_html_e( 'Preview English Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
-					</button>
-					
-					<button type="button" class="button preview-email-de" style="margin-left: 10px;">
-						<?php esc_html_e( 'Preview German Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
+					<button type="button" class="button button-secondary preview-email-de" style="margin-left: 10px;">
+						<?php esc_html_e( '📧 Preview German Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
 					</button>
 				</div>
 			</form>
@@ -671,39 +680,258 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 
 		$settings = $_POST['settings'];
 		
-		// Extract Keycloak settings
-		$base_url = sanitize_text_field( $settings['monikit_settings[keycloak_base_url]'] );
-		$realm = sanitize_text_field( $settings['monikit_settings[keycloak_realm]'] );
-		$client_id = sanitize_text_field( $settings['monikit_settings[keycloak_client_id]'] );
-		$client_secret = sanitize_text_field( $settings['monikit_settings[keycloak_client_secret]'] );
-		$admin_username = sanitize_text_field( $settings['monikit_settings[keycloak_admin_username]'] );
-		$admin_password = sanitize_text_field( $settings['monikit_settings[keycloak_admin_password]'] );
+		// Debug: Log the received settings
+		error_log( 'Monikit Debug - Received settings: ' . print_r( $settings, true ) );
+		
+		// Extract Keycloak settings with proper field name handling
+		$base_url = '';
+		$realm = '';
+		$client_id = '';
+		$client_secret = '';
+		$admin_username = '';
+		$admin_password = '';
+		
+		// Parse the settings array properly
+		foreach ( $settings as $key => $value ) {
+			if ( $key === 'monikit_settings[keycloak_base_url]' ) {
+				$base_url = sanitize_text_field( $value );
+			} elseif ( $key === 'monikit_settings[keycloak_realm]' ) {
+				$realm = sanitize_text_field( $value );
+			} elseif ( $key === 'monikit_settings[keycloak_client_id]' ) {
+				$client_id = sanitize_text_field( $value );
+			} elseif ( $key === 'monikit_settings[keycloak_client_secret]' ) {
+				$client_secret = sanitize_text_field( $value );
+			} elseif ( $key === 'monikit_settings[keycloak_admin_username]' ) {
+				$admin_username = sanitize_text_field( $value );
+			} elseif ( $key === 'monikit_settings[keycloak_admin_password]' ) {
+				$admin_password = sanitize_text_field( $value );
+			}
+		}
+		
+		// Debug: Log the extracted values
+		error_log( 'Monikit Debug - Extracted values: base_url=' . $base_url . ', realm=' . $realm . ', client_id=' . $client_id . ', admin_username=' . $admin_username . ', admin_password=' . ( ! empty( $admin_password ) ? 'SET' : 'EMPTY' ) );
 
-		// Basic validation
-		if ( empty( $base_url ) || empty( $realm ) || empty( $client_id ) ) {
-			wp_send_json_error( __( 'Please fill in all required Keycloak fields.', 'monikit-app-gdpr-user-data-deletion' ) );
+		// Basic validation with detailed error messages
+		$missing_fields = array();
+		if ( empty( $base_url ) ) $missing_fields[] = 'Keycloak Base URL';
+		if ( empty( $realm ) ) $missing_fields[] = 'Realm';
+		if ( empty( $client_id ) ) $missing_fields[] = 'Client ID';
+		if ( empty( $admin_username ) ) $missing_fields[] = 'Admin Username';
+		if ( empty( $admin_password ) ) $missing_fields[] = 'Admin Password';
+		
+		// If we have missing fields, try to get them from saved settings
+		if ( ! empty( $missing_fields ) ) {
+			$saved_settings = get_option( $this->option_name, array() );
+			
+			if ( empty( $base_url ) && ! empty( $saved_settings['keycloak_base_url'] ) ) {
+				$base_url = $saved_settings['keycloak_base_url'];
+				$missing_fields = array_diff( $missing_fields, array( 'Keycloak Base URL' ) );
+			}
+			if ( empty( $realm ) && ! empty( $saved_settings['keycloak_realm'] ) ) {
+				$realm = $saved_settings['keycloak_realm'];
+				$missing_fields = array_diff( $missing_fields, array( 'Realm' ) );
+			}
+			if ( empty( $client_id ) && ! empty( $saved_settings['keycloak_client_id'] ) ) {
+				$client_id = $saved_settings['keycloak_client_id'];
+				$missing_fields = array_diff( $missing_fields, array( 'Client ID' ) );
+			}
+			if ( empty( $admin_username ) && ! empty( $saved_settings['keycloak_admin_username'] ) ) {
+				$admin_username = $saved_settings['keycloak_admin_username'];
+				$missing_fields = array_diff( $missing_fields, array( 'Admin Username' ) );
+			}
+			if ( empty( $admin_password ) && ! empty( $saved_settings['keycloak_admin_password'] ) ) {
+				$admin_password = $saved_settings['keycloak_admin_password'];
+				$missing_fields = array_diff( $missing_fields, array( 'Admin Password' ) );
+			}
+		}
+		
+		// Final validation check
+		if ( ! empty( $missing_fields ) ) {
+			$error_message = sprintf( 
+				__( 'Please fill in the following required fields: %s', 'monikit-app-gdpr-user-data-deletion' ),
+				implode( ', ', $missing_fields )
+			);
+			wp_send_json_error( $error_message );
 		}
 
-		// Test connection
-		$test_url = trailingslashit( $base_url ) . 'realms/' . $realm . '/.well-known/openid_configuration';
+		// Normalize the base URL
+		$base_url = $this->normalize_keycloak_url( $base_url );
+
+		// Test connection by attempting to get access token
+		// Check if /auth is already in the base URL
+		if ( strpos( $base_url, '/auth' ) !== false ) {
+			$token_url = trailingslashit( $base_url ) . 'realms/master/protocol/openid-connect/token';
+		} else {
+			$token_url = trailingslashit( $base_url ) . 'auth/realms/master/protocol/openid-connect/token';
+		}
 		
-		$response = wp_remote_get( $test_url, array(
+		// Prepare POST body
+		$post_body = array(
+			'grant_type' => 'password',
+			'client_id' => $client_id,
+			'username' => $admin_username,
+			'password' => $admin_password,
+		);
+
+		// Add client secret if provided
+		if ( ! empty( $client_secret ) ) {
+			$post_body['client_secret'] = $client_secret;
+		}
+
+		// Make the token request
+		$response = wp_remote_post( $token_url, array(
 			'timeout' => 30,
 			'headers' => array(
+				'Content-Type' => 'application/x-www-form-urlencoded',
 				'User-Agent' => 'Monikit-Plugin/1.0',
 			),
+			'body' => $post_body,
 		) );
 
+		// Handle connection errors
 		if ( is_wp_error( $response ) ) {
-			wp_send_json_error( $response->get_error_message() );
+			wp_send_json_error( sprintf( __( 'Connection error: %s', 'monikit-app-gdpr-user-data-deletion' ), $response->get_error_message() ) );
 		}
 
 		$status_code = wp_remote_retrieve_response_code( $response );
-		
-		if ( $status_code === 200 ) {
-			wp_send_json_success( __( 'Keycloak connection successful!', 'monikit-app-gdpr-user-data-deletion' ) );
+		$response_body = wp_remote_retrieve_body( $response );
+		$response_data = json_decode( $response_body, true );
+
+		// Check for successful response
+		if ( $status_code === 200 && ! empty( $response_data ) ) {
+			// Check if access token is present
+			if ( isset( $response_data['access_token'] ) && ! empty( $response_data['access_token'] ) ) {
+				$access_token = $response_data['access_token'];
+				
+				// Step 2: Test user realm access
+				$realm_access_result = $this->test_realm_access( $base_url, $realm, $access_token );
+				
+				if ( $realm_access_result['success'] ) {
+					wp_send_json_success( __( '✅ Connected successfully to Keycloak. Access token retrieved and realm access verified.', 'monikit-app-gdpr-user-data-deletion' ) );
+				} else {
+					// Token is valid but realm access failed
+					wp_send_json_error( sprintf( 
+						__( '⚠️ Token retrieved successfully, but realm access failed: %s', 'monikit-app-gdpr-user-data-deletion' ),
+						$realm_access_result['message']
+					) );
+				}
+			} else {
+				wp_send_json_error( __( '❌ Connection successful but no access token received.', 'monikit-app-gdpr-user-data-deletion' ) );
+			}
 		} else {
-			wp_send_json_error( sprintf( __( 'Connection failed with status code: %d', 'monikit-app-gdpr-user-data-deletion' ), $status_code ) );
+			// Handle error responses
+			if ( ! empty( $response_data ) && isset( $response_data['error_description'] ) ) {
+				wp_send_json_error( sprintf( __( '❌ Keycloak error: %s', 'monikit-app-gdpr-user-data-deletion' ), $response_data['error_description'] ) );
+			} elseif ( ! empty( $response_data ) && isset( $response_data['error'] ) ) {
+				wp_send_json_error( sprintf( __( '❌ Keycloak error: %s', 'monikit-app-gdpr-user-data-deletion' ), $response_data['error'] ) );
+			} else {
+				wp_send_json_error( sprintf( __( '❌ Connection failed with status code: %d', 'monikit-app-gdpr-user-data-deletion' ), $status_code ) );
+			}
+		}
+	}
+
+	/**
+	 * Normalize Keycloak base URL to ensure proper formatting
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string $url The URL to normalize
+	 * @return	string Normalized URL
+	 */
+	private function normalize_keycloak_url( $url ) {
+		// Remove any whitespace
+		$url = trim( $url );
+		
+		// If URL is empty, return as is
+		if ( empty( $url ) ) {
+			return $url;
+		}
+		
+		// Add protocol if missing
+		if ( ! preg_match( '/^https?:\/\//', $url ) ) {
+			$url = 'https://' . $url;
+		}
+		
+		// Ensure it ends with a single slash
+		$url = rtrim( $url, '/' ) . '/';
+		
+		return $url;
+	}
+
+	/**
+	 * Test realm access with the retrieved access token
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string $base_url Keycloak base URL
+	 * @param	string $realm Realm name
+	 * @param	string $access_token Access token
+	 * @return	array Result with success status and message
+	 */
+	private function test_realm_access( $base_url, $realm, $access_token ) {
+		// Build the users endpoint URL - check if /auth is in the base URL
+		if ( strpos( $base_url, '/auth' ) !== false ) {
+			$users_url = trailingslashit( $base_url ) . 'admin/realms/' . urlencode( $realm ) . '/users';
+		} else {
+			$users_url = trailingslashit( $base_url ) . 'auth/admin/realms/' . urlencode( $realm ) . '/users';
+		}
+		
+		// Make authenticated request to get users
+		$response = wp_remote_get( $users_url, array(
+			'timeout' => 30,
+			'headers' => array(
+				'Authorization' => 'Bearer ' . $access_token,
+				'Content-Type' => 'application/json',
+				'User-Agent' => 'Monikit-Plugin/1.0',
+			),
+		) );
+		
+		// Handle connection errors
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'success' => false,
+				'message' => sprintf( __( 'Connection error: %s', 'monikit-app-gdpr-user-data-deletion' ), $response->get_error_message() )
+			);
+		}
+		
+		$status_code = wp_remote_retrieve_response_code( $response );
+		$response_body = wp_remote_retrieve_body( $response );
+		$response_data = json_decode( $response_body, true );
+		
+		// Check for successful response
+		if ( $status_code === 200 ) {
+			// Verify we got a valid JSON array
+			if ( is_array( $response_data ) ) {
+				return array(
+					'success' => true,
+					'message' => sprintf( __( 'Successfully connected to %s realm and retrieved user list (%d users found)', 'monikit-app-gdpr-user-data-deletion' ), $realm, count( $response_data ) )
+				);
+			} else {
+				return array(
+					'success' => false,
+					'message' => __( 'Invalid response format from Keycloak server', 'monikit-app-gdpr-user-data-deletion' )
+				);
+			}
+		} elseif ( $status_code === 401 ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Token is valid, but access to realm users is forbidden. Check Keycloak client permissions.', 'monikit-app-gdpr-user-data-deletion' )
+			);
+		} elseif ( $status_code === 403 ) {
+			return array(
+				'success' => false,
+				'message' => __( 'Token is valid, but access to realm users is forbidden. Check Keycloak client permissions.', 'monikit-app-gdpr-user-data-deletion' )
+			);
+		} elseif ( $status_code === 404 ) {
+			return array(
+				'success' => false,
+				'message' => sprintf( __( 'Realm "%s" not found. Check the realm name.', 'monikit-app-gdpr-user-data-deletion' ), $realm )
+			);
+		} else {
+			return array(
+				'success' => false,
+				'message' => sprintf( __( 'Realm access failed with status code: %d', 'monikit-app-gdpr-user-data-deletion' ), $status_code )
+			);
 		}
 	}
 
