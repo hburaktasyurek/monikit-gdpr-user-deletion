@@ -18,6 +18,8 @@ $show_subtitle = isset( $atts['show_subtitle'] ) ? $atts['show_subtitle'] === 't
 $form_class = isset( $atts['class'] ) ? $atts['class'] : 'monigpdr-deletion-form-embedded';
 $style = isset( $atts['style'] ) ? $atts['style'] : 'default';
 
+// Translation variables are now passed from the shortcode method
+
 // Generate unique ID for this form instance
 $form_id = 'monigpdr-deletion-form-' . uniqid();
 ?>
@@ -42,21 +44,21 @@ $form_id = 'monigpdr-deletion-form-' . uniqid();
 			<div class="monigpdr-form-step" id="<?php echo esc_attr( $form_id ); ?>-step-1">
 				<div class="monigpdr-form-group">
 					<label for="<?php echo esc_attr( $form_id ); ?>-email">
-						<?php echo esc_html( $current_lang === 'de' ? 'E-Mail-Adresse' : 'Email Address' ); ?> *
+						<?php echo esc_html( $email_label ); ?> *
 					</label>
 					<input 
 						type="email" 
 						id="<?php echo esc_attr( $form_id ); ?>-email" 
 						name="email" 
 						required 
-						placeholder="<?php echo esc_attr( $current_lang === 'de' ? 'ihre@email.de' : 'your@email.com' ); ?>"
+						placeholder="<?php echo esc_attr( $email_placeholder ); ?>"
 						class="monigpdr-input"
 					>
 				</div>
 				
 				<div class="monigpdr-form-actions">
 					<button type="submit" class="monigpdr-btn monigpdr-btn-primary">
-						<?php echo esc_html( $current_lang === 'de' ? 'Löschung anfordern' : 'Request Deletion' ); ?>
+						<?php echo esc_html( $request_button ); ?>
 					</button>
 				</div>
 			</div>
@@ -64,31 +66,28 @@ $form_id = 'monigpdr-deletion-form-' . uniqid();
 			<div class="monigpdr-form-step" id="<?php echo esc_attr( $form_id ); ?>-step-2" style="display: none;">
 				<div class="monigpdr-form-group">
 					<label for="<?php echo esc_attr( $form_id ); ?>-confirmation-code">
-						<?php echo esc_html( $current_lang === 'de' ? 'Bestätigungscode' : 'Confirmation Code' ); ?> *
+						<?php echo esc_html( $confirmation_label ); ?> *
 					</label>
 					<input 
 						type="text" 
 						id="<?php echo esc_attr( $form_id ); ?>-confirmation-code" 
 						name="confirmation_code" 
-						placeholder="<?php echo esc_attr( $current_lang === 'de' ? '123456' : '123456' ); ?>"
+						placeholder="<?php echo esc_attr( $confirmation_placeholder ); ?>"
 						class="monigpdr-input monigpdr-code-input"
 						maxlength="6"
 						pattern="[0-9]{6}"
 					>
 					<small class="monigpdr-help-text">
-						<?php echo esc_html( $current_lang === 'de' 
-							? 'Geben Sie den 6-stelligen Code ein, der an Ihre E-Mail-Adresse gesendet wurde.' 
-							: 'Enter the 6-digit code sent to your email address.' 
-						); ?>
+						<?php echo esc_html( $confirmation_help ); ?>
 					</small>
 				</div>
 				
 				<div class="monigpdr-form-actions">
 					<button type="button" class="monigpdr-btn monigpdr-btn-secondary" data-back-btn="<?php echo esc_attr( $form_id ); ?>">
-						<?php echo esc_html( $current_lang === 'de' ? 'Zurück' : 'Back' ); ?>
+						<?php echo esc_html( $back_button ); ?>
 					</button>
 					<button type="submit" class="monigpdr-btn monigpdr-btn-primary">
-						<?php echo esc_html( $current_lang === 'de' ? 'Bestätigen' : 'Confirm' ); ?>
+						<?php echo esc_html( $confirm_button ); ?>
 					</button>
 				</div>
 			</div>
@@ -98,32 +97,26 @@ $form_id = 'monigpdr-deletion-form-' . uniqid();
 					<div class="monigpdr-warning-icon">
 						⚠️
 					</div>
-					<h3><?php echo esc_html( $current_lang === 'de' ? 'Letzte Bestätigung' : 'Final Confirmation' ); ?></h3>
+					<h3><?php echo esc_html( $final_title ); ?></h3>
 					<p>
-						<?php echo esc_html( $current_lang === 'de' 
-							? 'Sind Sie sicher, dass Sie Ihr Konto unwiderruflich löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.' 
-							: 'Are you sure you want to permanently delete your account? This action cannot be undone.' 
-						); ?>
+						<?php echo esc_html( $final_message ); ?>
 					</p>
 					
 					<div class="monigpdr-checkbox-group">
 						<label class="monigpdr-checkbox-label">
 							<input type="checkbox" id="<?php echo esc_attr( $form_id ); ?>-confirm-deletion" name="confirm_deletion">
 							<span class="monigpdr-checkbox-custom"></span>
-							<?php echo esc_html( $current_lang === 'de' 
-								? 'Ich verstehe, dass diese Aktion unwiderruflich ist und mein Konto permanent gelöscht wird.' 
-								: 'I understand that this action is irreversible and my account will be permanently deleted.' 
-							); ?>
+							<?php echo esc_html( $checkbox_text ); ?>
 						</label>
 					</div>
 				</div>
 				
 				<div class="monigpdr-form-actions">
 					<button type="button" class="monigpdr-btn monigpdr-btn-secondary" data-cancel-btn="<?php echo esc_attr( $form_id ); ?>">
-						<?php echo esc_html( $current_lang === 'de' ? 'Abbrechen' : 'Cancel' ); ?>
+						<?php echo esc_html( $cancel_button ); ?>
 					</button>
 					<button type="submit" class="monigpdr-btn monigpdr-btn-danger" data-delete-btn="<?php echo esc_attr( $form_id ); ?>">
-						<?php echo esc_html( $current_lang === 'de' ? 'Konto löschen' : 'Delete My Account' ); ?>
+						<?php echo esc_html( $delete_button ); ?>
 					</button>
 				</div>
 			</div>

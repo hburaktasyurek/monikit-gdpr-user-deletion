@@ -24,6 +24,9 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 	function __construct(){
 		// Initialize hooks after plugin is loaded to ensure settings are available
 		add_action( 'MONIGPDR/plugin_loaded', array( $this, 'init_hooks' ) );
+		
+		// Load text domain for translations
+		add_action( 'init', array( $this, 'load_textdomain' ) );
 	}
 
 	/**
@@ -38,6 +41,135 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		
 		// Add shortcode for embedding the deletion form
 		add_shortcode( 'monigpdr_deletion_form', array( $this, 'deletion_form_shortcode' ) );
+	}
+
+	/**
+	 * Load text domain for translations
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function load_textdomain() {
+		load_plugin_textdomain(
+			'monikit-app-gdpr-user-data-deletion',
+			false,
+			dirname( plugin_basename( MONIGPDR_PLUGIN_FILE ) ) . '/languages/'
+		);
+	}
+
+	/**
+	 * Get translated string
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$key	String key
+	 * @param	string	$default	Default value
+	 * @return	string	Translated string
+	 */
+	private function get_translated_string( $key, $default = '' ) {
+		$current_lang = $this->get_current_language();
+		
+		// Use hardcoded translations for now to ensure consistency
+		$translations = $this->get_translation_strings();
+		
+		if ( isset( $translations[ $key ][ $current_lang ] ) ) {
+			return $translations[ $key ][ $current_lang ];
+		}
+		
+		return $default;
+	}
+
+	/**
+	 * Get translation strings
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @return	array	Translation strings
+	 */
+	private function get_translation_strings() {
+		return array(
+			'delete_account' => array(
+				'en' => 'Delete Account',
+				'de' => 'Konto löschen'
+			),
+			'request_deletion_subtitle' => array(
+				'en' => 'Request deletion of your account. You will receive a confirmation email.',
+				'de' => 'Beantragen Sie die Löschung Ihres Kontos. Sie erhalten eine Bestätigungs-E-Mail.'
+			),
+			'email_address' => array(
+				'en' => 'Email Address',
+				'de' => 'E-Mail-Adresse'
+			),
+			'request_deletion' => array(
+				'en' => 'Request Deletion',
+				'de' => 'Löschung beantragen'
+			),
+			'confirmation_code' => array(
+				'en' => 'Confirmation Code',
+				'de' => 'Bestätigungscode'
+			),
+			'confirm_deletion' => array(
+				'en' => 'Confirm Deletion',
+				'de' => 'Löschung bestätigen'
+			),
+			'final_confirmation_title' => array(
+				'en' => 'Final Confirmation',
+				'de' => 'Endgültige Bestätigung'
+			),
+			'final_confirmation_message' => array(
+				'en' => 'This action cannot be undone. Your account and all associated data will be permanently deleted.',
+				'de' => 'Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto und alle zugehörigen Daten werden dauerhaft gelöscht.'
+			),
+			'confirm_checkbox_text' => array(
+				'en' => 'I understand that this action is irreversible and my account will be permanently deleted.',
+				'de' => 'Ich verstehe, dass diese Aktion unwiderruflich ist und mein Konto permanent gelöscht wird.'
+			),
+			'delete_my_account' => array(
+				'en' => 'Delete My Account',
+				'de' => 'Mein Konto löschen'
+			),
+			'confirmation_sent' => array(
+				'en' => 'Confirmation code sent to your email address.',
+				'de' => 'Bestätigungscode an Ihre E-Mail-Adresse gesendet.'
+			),
+			'invalid_code' => array(
+				'en' => 'Invalid or expired confirmation code.',
+				'de' => 'Ungültiger oder abgelaufener Bestätigungscode.'
+			),
+			'account_deleted' => array(
+				'en' => 'Your account has been successfully deleted.',
+				'de' => 'Ihr Konto wurde erfolgreich gelöscht.'
+			),
+			'please_enter_email' => array(
+				'en' => 'Please enter a valid email address.',
+				'de' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.'
+			),
+			'please_provide_code' => array(
+				'en' => 'Please provide valid email and confirmation code.',
+				'de' => 'Bitte geben Sie eine gültige E-Mail-Adresse und einen Bestätigungscode an.'
+			),
+			'failed_send_email' => array(
+				'en' => 'Failed to send confirmation email. Please try again.',
+				'de' => 'Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.'
+			),
+			'security_check_failed' => array(
+				'en' => 'Security check failed.',
+				'de' => 'Sicherheitsüberprüfung fehlgeschlagen.'
+			),
+			'invalid_confirmation_link' => array(
+				'en' => 'Invalid confirmation link.',
+				'de' => 'Ungültiger Bestätigungslink.'
+			),
+			'invalid_link_parameters' => array(
+				'en' => 'Invalid confirmation link parameters.',
+				'de' => 'Ungültige Bestätigungslink-Parameter.'
+			),
+			'account_deleted_title' => array(
+				'en' => 'Account Deleted',
+				'de' => 'Konto gelöscht'
+			)
+		);
 	}
 
 	/**
@@ -482,19 +614,38 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			return '';
 		}
 
+		// Get current language
+		$current_lang = $this->get_current_language();
+		
+		// Get translated strings
+		$translated_title = $this->get_translated_string( 'delete_account', 'Delete Account' );
+		$translated_subtitle = $this->get_translated_string( 'request_deletion_subtitle', 'Request deletion of your account. You will receive a confirmation email.' );
+		$email_label = $this->get_translated_string( 'email_address', 'Email Address' );
+		$email_placeholder = $current_lang === 'de' ? 'ihre@email.de' : 'your@email.com';
+		$request_button = $this->get_translated_string( 'request_deletion', 'Request Deletion' );
+		$confirmation_label = $this->get_translated_string( 'confirmation_code', 'Confirmation Code' );
+		$confirmation_placeholder = '123456';
+		$confirmation_help = $current_lang === 'de' 
+			? 'Geben Sie den 6-stelligen Code ein, der an Ihre E-Mail-Adresse gesendet wurde.'
+			: 'Enter the 6-digit code sent to your email address.';
+		$back_button = $current_lang === 'de' ? 'Zurück' : 'Back';
+		$confirm_button = $current_lang === 'de' ? 'Bestätigen' : 'Confirm';
+		$final_title = $this->get_translated_string( 'final_confirmation_title', 'Final Confirmation' );
+		$final_message = $this->get_translated_string( 'final_confirmation_message', 'Are you sure you want to permanently delete your account? This action cannot be undone.' );
+		$checkbox_text = $this->get_translated_string( 'confirm_checkbox_text', 'I understand that this action is irreversible and my account will be permanently deleted.' );
+		$cancel_button = $current_lang === 'de' ? 'Abbrechen' : 'Cancel';
+		$delete_button = $this->get_translated_string( 'delete_my_account', 'Delete My Account' );
+
 		// Parse shortcode attributes
 		$atts = shortcode_atts( array(
-			'title' => __( 'Delete Account', 'monikit-app-gdpr-user-data-deletion' ),
-			'subtitle' => __( 'Request deletion of your account. You will receive a confirmation email.', 'monikit-app-gdpr-user-data-deletion' ),
+			'title' => $translated_title,
+			'subtitle' => $translated_subtitle,
 			'show_title' => 'true',
 			'show_subtitle' => 'true',
 			'class' => 'monigpdr-deletion-form-embedded',
 			'style' => 'default', // default, minimal, card
 		), $atts, 'monigpdr_deletion_form' );
 
-		// Get current language
-		$current_lang = $this->get_current_language();
-		
 		// Ensure scripts and styles are loaded
 		$this->enqueue_frontend_scripts_and_styles();
 

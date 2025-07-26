@@ -38,6 +38,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		add_action( 'wp_ajax_monikit_test_keycloak_connection', array( $this, 'test_keycloak_connection' ) );
 		add_action( 'wp_ajax_monikit_preview_email_template', array( $this, 'preview_email_template' ) );
 		add_action( 'wp_ajax_monikit_load_default_templates', array( $this, 'load_default_templates' ) );
+		add_action( 'wp_ajax_monikit_save_translations', array( $this, 'save_translations' ) );
 	}
 
 	/**
@@ -56,6 +57,16 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			array( $this, 'admin_page' ),
 			'dashicons-admin-generic',
 			30
+		);
+		
+		// Add Translation submenu
+		add_submenu_page(
+			'monikit_settings',
+			__( 'Translations', 'monikit-app-gdpr-user-data-deletion' ),
+			__( 'Translations', 'monikit-app-gdpr-user-data-deletion' ),
+			'manage_options',
+			'monikit_translations',
+			array( $this, 'translations_page' )
 		);
 	}
 
@@ -549,7 +560,11 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	 * @return	void
 	 */
 	public function enqueue_admin_scripts( $hook ) {
-		if ( 'toplevel_page_monikit_settings' !== $hook ) {
+		// Load scripts on main settings page or any page that might be our translations page
+		if ( 'toplevel_page_monikit_settings' !== $hook && 
+			 'toplevel_page_monikit_translations' !== $hook &&
+			 'monikit_page_monikit_translations' !== $hook &&
+			 strpos( $hook, 'monikit' ) === false ) {
 			return;
 		}
 
@@ -1075,5 +1090,398 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'subject' => $subject,
 			'html' => $preview_html,
 		) );
+	}
+
+	/**
+	 * Translations page
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function translations_page() {
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'monikit-app-gdpr-user-data-deletion' ) );
+		}
+
+		$translations = $this->get_translatable_strings();
+		$current_translations = $this->load_current_translations();
+		
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+			
+			<div class="notice notice-info">
+				<p><?php _e( 'Edit public-facing translations for the plugin. Changes will be saved to language files in the languages folder.', 'monikit-app-gdpr-user-data-deletion' ); ?></p>
+			</div>
+
+			<form id="monikit-translations-form">
+				<?php wp_nonce_field( 'monikit_translations_nonce', 'monikit_translations_nonce' ); ?>
+				
+				<table class="wp-list-table widefat fixed striped">
+					<thead>
+						<tr>
+							<th style="width: 30%;"><?php _e( 'String Key', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th style="width: 35%;"><?php _e( 'English', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th style="width: 35%;"><?php _e( 'German', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $translations as $key => $string ) : ?>
+							<tr>
+								<td>
+									<strong><?php echo esc_html( $key ); ?></strong>
+									<br>
+									<small style="color: #666;"><?php echo esc_html( $string['context'] ); ?></small>
+								</td>
+								<td>
+									<input type="text" 
+										   name="translations[en][<?php echo esc_attr( $key ); ?>]" 
+										   value="<?php echo esc_attr( isset( $current_translations['en'][ $key ] ) ? $current_translations['en'][ $key ] : $string['en'] ); ?>"
+										   class="regular-text"
+										   placeholder="<?php echo esc_attr( $string['en'] ); ?>">
+								</td>
+								<td>
+									<input type="text" 
+										   name="translations[de][<?php echo esc_attr( $key ); ?>]" 
+										   value="<?php echo esc_attr( isset( $current_translations['de'][ $key ] ) ? $current_translations['de'][ $key ] : $string['de'] ); ?>"
+										   class="regular-text"
+										   placeholder="<?php echo esc_attr( $string['de'] ); ?>">
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+
+				<p class="submit">
+					<button type="submit" class="button button-primary" id="save-translations" style="font-size: 16px; padding: 12px 24px; font-weight: 600;">
+						<span class="dashicons dashicons-saved" style="margin-right: 8px;"></span>
+						<?php _e( 'Save Translations', 'monikit-app-gdpr-user-data-deletion' ); ?>
+					</button>
+					<span class="spinner" style="float: none; margin-left: 10px;"></span>
+					<p class="description" style="margin-top: 10px; color: #666;">
+						<?php _e( 'Click to save all translation changes. The changes will be applied immediately to the frontend forms.', 'monikit-app-gdpr-user-data-deletion' ); ?>
+					</p>
+				</p>
+			</form>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get translatable strings
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @return	array	Array of translatable strings
+	 */
+	private function get_translatable_strings() {
+		return array(
+			'delete_account' => array(
+				'en' => 'Delete Account',
+				'de' => 'Konto löschen',
+				'context' => 'Form title'
+			),
+			'request_deletion_subtitle' => array(
+				'en' => 'Request deletion of your account. You will receive a confirmation email.',
+				'de' => 'Beantragen Sie die Löschung Ihres Kontos. Sie erhalten eine Bestätigungs-E-Mail.',
+				'context' => 'Form subtitle'
+			),
+			'email_address' => array(
+				'en' => 'Email Address',
+				'de' => 'E-Mail-Adresse',
+				'context' => 'Form field label'
+			),
+			'request_deletion' => array(
+				'en' => 'Request Deletion',
+				'de' => 'Löschung beantragen',
+				'context' => 'Button text'
+			),
+			'confirmation_code' => array(
+				'en' => 'Confirmation Code',
+				'de' => 'Bestätigungscode',
+				'context' => 'Form field label'
+			),
+			'confirm_deletion' => array(
+				'en' => 'Confirm Deletion',
+				'de' => 'Löschung bestätigen',
+				'context' => 'Button text'
+			),
+			'final_confirmation_title' => array(
+				'en' => 'Final Confirmation',
+				'de' => 'Endgültige Bestätigung',
+				'context' => 'Final step title'
+			),
+			'final_confirmation_message' => array(
+				'en' => 'This action cannot be undone. Your account and all associated data will be permanently deleted.',
+				'de' => 'Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto und alle zugehörigen Daten werden dauerhaft gelöscht.',
+				'context' => 'Final confirmation message'
+			),
+			'confirm_checkbox_text' => array(
+				'en' => 'I understand that this action is irreversible and my account will be permanently deleted.',
+				'de' => 'Ich verstehe, dass diese Aktion unwiderruflich ist und mein Konto permanent gelöscht wird.',
+				'context' => 'Checkbox text'
+			),
+			'delete_my_account' => array(
+				'en' => 'Delete My Account',
+				'de' => 'Mein Konto löschen',
+				'context' => 'Final button text'
+			),
+			'confirmation_sent' => array(
+				'en' => 'Confirmation code sent to your email address.',
+				'de' => 'Bestätigungscode an Ihre E-Mail-Adresse gesendet.',
+				'context' => 'Success message'
+			),
+			'invalid_code' => array(
+				'en' => 'Invalid or expired confirmation code.',
+				'de' => 'Ungültiger oder abgelaufener Bestätigungscode.',
+				'context' => 'Error message'
+			),
+			'account_deleted' => array(
+				'en' => 'Your account has been successfully deleted.',
+				'de' => 'Ihr Konto wurde erfolgreich gelöscht.',
+				'context' => 'Success message'
+			),
+			'please_enter_email' => array(
+				'en' => 'Please enter a valid email address.',
+				'de' => 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+				'context' => 'Validation message'
+			),
+			'please_provide_code' => array(
+				'en' => 'Please provide valid email and confirmation code.',
+				'de' => 'Bitte geben Sie eine gültige E-Mail-Adresse und einen Bestätigungscode an.',
+				'context' => 'Validation message'
+			),
+			'failed_send_email' => array(
+				'en' => 'Failed to send confirmation email. Please try again.',
+				'de' => 'Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+				'context' => 'Error message'
+			),
+			'security_check_failed' => array(
+				'en' => 'Security check failed.',
+				'de' => 'Sicherheitsüberprüfung fehlgeschlagen.',
+				'context' => 'Error message'
+			),
+			'invalid_confirmation_link' => array(
+				'en' => 'Invalid confirmation link.',
+				'de' => 'Ungültiger Bestätigungslink.',
+				'context' => 'Error message'
+			),
+			'invalid_link_parameters' => array(
+				'en' => 'Invalid confirmation link parameters.',
+				'de' => 'Ungültige Bestätigungslink-Parameter.',
+				'context' => 'Error message'
+			),
+			'account_deleted_title' => array(
+				'en' => 'Account Deleted',
+				'de' => 'Konto gelöscht',
+				'context' => 'Page title'
+			)
+		);
+	}
+
+	/**
+	 * Load current translations from language files
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @return	array	Current translations
+	 */
+	private function load_current_translations() {
+		$translations = array(
+			'en' => array(),
+			'de' => array()
+		);
+
+		// Load English translations
+		$en_file = MONIGPDR_PLUGIN_DIR . 'languages/monikit-app-gdpr-user-data-deletion-en_US.po';
+		if ( file_exists( $en_file ) ) {
+			$translations['en'] = $this->parse_po_file( $en_file );
+		}
+
+		// Load German translations
+		$de_file = MONIGPDR_PLUGIN_DIR . 'languages/monikit-app-gdpr-user-data-deletion-de_DE.po';
+		if ( file_exists( $de_file ) ) {
+			$translations['de'] = $this->parse_po_file( $de_file );
+		}
+
+		return $translations;
+	}
+
+	/**
+	 * Parse PO file
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$file_path	Path to PO file
+	 * @return	array	Parsed translations
+	 */
+	private function parse_po_file( $file_path ) {
+		$translations = array();
+		
+		if ( ! file_exists( $file_path ) ) {
+			return $translations;
+		}
+
+		$content = file_get_contents( $file_path );
+		$lines = explode( "\n", $content );
+		
+		$current_msgid = '';
+		$current_msgstr = '';
+		$in_msgstr = false;
+		
+		foreach ( $lines as $line ) {
+			$line = trim( $line );
+			
+			if ( strpos( $line, 'msgid "' ) === 0 ) {
+				// Save previous translation
+				if ( ! empty( $current_msgid ) && ! empty( $current_msgstr ) ) {
+					$translations[ $current_msgid ] = $current_msgstr;
+				}
+				
+				$current_msgid = $this->extract_quoted_string( $line );
+				$current_msgstr = '';
+				$in_msgstr = false;
+			} elseif ( strpos( $line, 'msgstr "' ) === 0 ) {
+				$current_msgstr = $this->extract_quoted_string( $line );
+				$in_msgstr = true;
+			} elseif ( $in_msgstr && strpos( $line, '"' ) === 0 ) {
+				$current_msgstr .= $this->extract_quoted_string( $line );
+			}
+		}
+		
+		// Save last translation
+		if ( ! empty( $current_msgid ) && ! empty( $current_msgstr ) ) {
+			$translations[ $current_msgid ] = $current_msgstr;
+		}
+		
+		return $translations;
+	}
+
+	/**
+	 * Extract quoted string from PO file line
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$line	PO file line
+	 * @return	string	Extracted string
+	 */
+	private function extract_quoted_string( $line ) {
+		$start = strpos( $line, '"' ) + 1;
+		$end = strrpos( $line, '"' );
+		
+		if ( $start === false || $end === false || $start >= $end ) {
+			return '';
+		}
+		
+		return substr( $line, $start, $end - $start );
+	}
+
+	/**
+	 * Save translations
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function save_translations() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_translations_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		$translations_json = isset( $_POST['translations'] ) ? $_POST['translations'] : '{}';
+		$translations = json_decode( stripslashes( $translations_json ), true );
+		
+		if ( ! is_array( $translations ) ) {
+			$translations = array();
+		}
+		
+		// Ensure languages directory exists
+		$languages_dir = MONIGPDR_PLUGIN_DIR . 'languages/';
+		if ( ! is_dir( $languages_dir ) ) {
+			wp_mkdir_p( $languages_dir );
+		}
+
+		$success_count = 0;
+		$errors = array();
+
+		// Save English translations
+		if ( isset( $translations['en'] ) ) {
+			$en_file = $languages_dir . 'monikit-app-gdpr-user-data-deletion-en_US.po';
+			$result = $this->write_po_file( $en_file, $translations['en'], 'en_US' );
+			if ( $result ) {
+				$success_count++;
+			} else {
+				$errors[] = 'English translations';
+			}
+		}
+
+		// Save German translations
+		if ( isset( $translations['de'] ) ) {
+			$de_file = $languages_dir . 'monikit-app-gdpr-user-data-deletion-de_DE.po';
+			$result = $this->write_po_file( $de_file, $translations['de'], 'de_DE' );
+			if ( $result ) {
+				$success_count++;
+			} else {
+				$errors[] = 'German translations';
+			}
+		}
+
+		if ( $success_count > 0 ) {
+			wp_send_json_success( array(
+				'message' => sprintf( 
+					__( 'Translations saved successfully. %d language(s) updated.', 'monikit-app-gdpr-user-data-deletion' ),
+					$success_count
+				)
+			));
+		} else {
+			wp_send_json_error( array(
+				'message' => __( 'Failed to save translations. Please check file permissions.', 'monikit-app-gdpr-user-data-deletion' )
+			));
+		}
+	}
+
+	/**
+	 * Write PO file
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$file_path	Path to PO file
+	 * @param	array	$translations	Translations array
+	 * @param	string	$locale	Locale code
+	 * @return	bool	Success status
+	 */
+	private function write_po_file( $file_path, $translations, $locale ) {
+		$content = "# Translation file for Monikit GDPR User Data Deletion\n";
+		$content .= "# Language: " . ( $locale === 'en_US' ? 'English' : 'German' ) . "\n";
+		$content .= "# Generated: " . date( 'Y-m-d H:i:s' ) . "\n\n";
+
+		foreach ( $translations as $msgid => $msgstr ) {
+			if ( ! empty( $msgstr ) ) {
+				$content .= 'msgid "' . $this->escape_po_string( $msgid ) . '"' . "\n";
+				$content .= 'msgstr "' . $this->escape_po_string( $msgstr ) . '"' . "\n\n";
+			}
+		}
+
+		return file_put_contents( $file_path, $content ) !== false;
+	}
+
+	/**
+	 * Escape string for PO file
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	string	$string	String to escape
+	 * @return	string	Escaped string
+	 */
+	private function escape_po_string( $string ) {
+		return str_replace( array( '"', '\\' ), array( '\\"', '\\\\' ), $string );
 	}
 } 

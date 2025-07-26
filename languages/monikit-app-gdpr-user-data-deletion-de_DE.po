@@ -1,0 +1,64 @@
+# Translation file for Monikit GDPR User Data Deletion
+# Language: German
+# Generated: 2025-07-26 13:41:27
+
+msgid "delete_account"
+msgstr "Konto löschen"
+
+msgid "request_deletion_subtitle"
+msgstr "Beantragen Sie die Löschung Ihres Kontos. Sie erhalten eine Bestätigungs-E-Mail."
+
+msgid "email_address"
+msgstr "E-Mail-Adresse"
+
+msgid "request_deletion"
+msgstr "Löschung beantragen"
+
+msgid "confirmation_code"
+msgstr "Bestätigungscode"
+
+msgid "confirm_deletion"
+msgstr "Löschung bestätigen"
+
+msgid "final_confirmation_title"
+msgstr "Endgültige Bestätigung"
+
+msgid "final_confirmation_message"
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden. Ihr Konto und alle zugehörigen Daten werden dauerhaft gelöscht."
+
+msgid "confirm_checkbox_text"
+msgstr "Ich verstehe, dass diese Aktion unwiderruflich ist und mein Konto permanent gelöscht wird."
+
+msgid "delete_my_account"
+msgstr "Mein Konto löschen"
+
+msgid "confirmation_sent"
+msgstr "Bestätigungscode an Ihre E-Mail-Adresse gesendet."
+
+msgid "invalid_code"
+msgstr "Ungültiger oder abgelaufener Bestätigungscode."
+
+msgid "account_deleted"
+msgstr "Ihr Konto wurde erfolgreich gelöscht."
+
+msgid "please_enter_email"
+msgstr "Bitte geben Sie eine gültige E-Mail-Adresse ein."
+
+msgid "please_provide_code"
+msgstr "Bitte geben Sie eine gültige E-Mail-Adresse und einen Bestätigungscode an."
+
+msgid "failed_send_email"
+msgstr "Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut."
+
+msgid "security_check_failed"
+msgstr "Sicherheitsüberprüfung fehlgeschlagen."
+
+msgid "invalid_confirmation_link"
+msgstr "Ungültiger Bestätigungslink."
+
+msgid "invalid_link_parameters"
+msgstr "Ungültige Bestätigungslink-Parameter."
+
+msgid "account_deleted_title"
+msgstr "Konto gelöscht"
+

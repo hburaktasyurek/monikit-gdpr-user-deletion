@@ -1,0 +1,64 @@
+# Translation file for Monikit GDPR User Data Deletion
+# Language: English
+# Generated: 2025-07-26 13:41:27
+
+msgid "delete_account"
+msgstr "Delete Account"
+
+msgid "request_deletion_subtitle"
+msgstr "Request deletion of your account. You will receive a confirmation email."
+
+msgid "email_address"
+msgstr "Email Address"
+
+msgid "request_deletion"
+msgstr "Request Deletion"
+
+msgid "confirmation_code"
+msgstr "Confirmation Code"
+
+msgid "confirm_deletion"
+msgstr "Confirm Deletion"
+
+msgid "final_confirmation_title"
+msgstr "Final Confirmation"
+
+msgid "final_confirmation_message"
+msgstr "This action cannot be undone. Your account and all associated data will be permanently deleted."
+
+msgid "confirm_checkbox_text"
+msgstr "I understand that this action is irreversible and my account will be permanently deleted."
+
+msgid "delete_my_account"
+msgstr "Delete My Account"
+
+msgid "confirmation_sent"
+msgstr "Confirmation code sent to your email address."
+
+msgid "invalid_code"
+msgstr "Invalid or expired confirmation code."
+
+msgid "account_deleted"
+msgstr "Your account has been successfully deleted."
+
+msgid "please_enter_email"
+msgstr "Please enter a valid email address."
+
+msgid "please_provide_code"
+msgstr "Please provide valid email and confirmation code."
+
+msgid "failed_send_email"
+msgstr "Failed to send confirmation email. Please try again."
+
+msgid "security_check_failed"
+msgstr "Security check failed."
+
+msgid "invalid_confirmation_link"
+msgstr "Invalid confirmation link."
+
+msgid "invalid_link_parameters"
+msgstr "Invalid confirmation link parameters."
+
+msgid "account_deleted_title"
+msgstr "Account Deleted"
+

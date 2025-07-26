@@ -60,6 +60,18 @@
                 e.preventDefault();
                 MonikitAdmin.loadDefaultTemplates();
             });
+            
+            // Save translations button
+            $('#save-translations').on('click', function(e) {
+                e.preventDefault();
+                MonikitAdmin.saveTranslations();
+            });
+            
+            // Prevent form submission
+            $('#monikit-translations-form').on('submit', function(e) {
+                e.preventDefault();
+                MonikitAdmin.saveTranslations();
+            });
         },
 
         /**
@@ -389,9 +401,22 @@
          * Check if email fields are empty and load defaults if needed
          */
         checkAndLoadDefaults: function() {
+            // Only run this on the main settings page, not on translations page
+            if ($('#monikit-translations-form').length > 0) {
+                return; // We're on translations page, skip this function
+            }
+            
+            // Check if email fields exist before trying to access them
+            var $emailSubjectEn = $('input[name="monikit_settings[email_subject_en]"]');
+            var $emailSubjectDe = $('input[name="monikit_settings[email_subject_de]"]');
+            
+            if (!$emailSubjectEn.length || !$emailSubjectDe.length) {
+                return; // Email fields don't exist on this page
+            }
+            
             // Check if email fields are empty
-            var emailSubjectEn = $('input[name="monikit_settings[email_subject_en]"]').val().trim();
-            var emailSubjectDe = $('input[name="monikit_settings[email_subject_de]"]').val().trim();
+            var emailSubjectEn = $emailSubjectEn.val() ? $emailSubjectEn.val().trim() : '';
+            var emailSubjectDe = $emailSubjectDe.val() ? $emailSubjectDe.val().trim() : '';
             
             // Check WYSIWYG content
             var emailHtmlEn = '';
@@ -399,14 +424,21 @@
             
             if (typeof tinymce !== 'undefined') {
                 if (tinymce.get('email_html_en')) {
-                    emailHtmlEn = tinymce.get('email_html_en').getContent().trim();
+                    emailHtmlEn = tinymce.get('email_html_en').getContent() ? tinymce.get('email_html_en').getContent().trim() : '';
                 }
                 if (tinymce.get('email_html_de')) {
-                    emailHtmlDe = tinymce.get('email_html_de').getContent().trim();
+                    emailHtmlDe = tinymce.get('email_html_de').getContent() ? tinymce.get('email_html_de').getContent().trim() : '';
                 }
             } else {
-                emailHtmlEn = $('textarea[name="monikit_settings[email_html_en]"]').val().trim();
-                emailHtmlDe = $('textarea[name="monikit_settings[email_html_de]"]').val().trim();
+                var $emailHtmlEn = $('textarea[name="monikit_settings[email_html_en]"]');
+                var $emailHtmlDe = $('textarea[name="monikit_settings[email_html_de]"]');
+                
+                if ($emailHtmlEn.length) {
+                    emailHtmlEn = $emailHtmlEn.val() ? $emailHtmlEn.val().trim() : '';
+                }
+                if ($emailHtmlDe.length) {
+                    emailHtmlDe = $emailHtmlDe.val() ? $emailHtmlDe.val().trim() : '';
+                }
             }
             
             // If all email fields are empty, automatically load defaults
@@ -548,6 +580,119 @@
                 clearTimeout(timeoutId);
             } finally {
                 $button.prop('disabled', false).text(originalText);
+            }
+        },
+
+        /**
+         * Save translations
+         */
+        saveTranslations: function() {
+            var $button = $('#save-translations');
+            var $form = $('#monikit-translations-form');
+            
+            if (!$button.length) {
+                console.error('Save button not found');
+                return;
+            }
+            
+            if (!$form.length) {
+                console.error('Translation form not found');
+                return;
+            }
+            
+            var $spinner = $button.siblings('.spinner');
+            var originalText = $button.text();
+            
+            // Show spinner and disable button
+            $spinner.addClass('is-active');
+            $button.prop('disabled', true).text('Saving...');
+            
+            // Collect form data
+            var formData = new FormData();
+            formData.append('action', 'monikit_save_translations');
+            formData.append('nonce', $('#monikit_translations_nonce').val());
+            
+            // Collect translations
+            var translations = {
+                en: {},
+                de: {}
+            };
+            
+            $('#monikit-translations-form input[name^="translations[en]"]').each(function() {
+                var key = $(this).attr('name').match(/\[([^\]]+)\]$/)[1];
+                translations.en[key] = $(this).val();
+            });
+            
+            $('#monikit-translations-form input[name^="translations[de]"]').each(function() {
+                var key = $(this).attr('name').match(/\[([^\]]+)\]$/)[1];
+                translations.de[key] = $(this).val();
+            });
+            
+            formData.append('translations', JSON.stringify(translations));
+            
+            // Send AJAX request
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        MonikitAdmin.showNotification(response.data.message, 'success');
+                    } else {
+                        MonikitAdmin.showNotification(response.data.message, 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr, status, error);
+                    MonikitAdmin.showNotification('Failed to save translations. Please try again.', 'error');
+                },
+                complete: function() {
+                    $spinner.removeClass('is-active');
+                    $button.prop('disabled', false).text(originalText);
+                }
+            });
+        },
+
+        /**
+         * Show notification
+         */
+        showNotification: function(message, type) {
+            var noticeClass = type === 'success' ? 'notice-success' : 'notice-error';
+            var $notice = $('<div class="notice ' + noticeClass + ' is-dismissible monikit-sticky-notice"><p>' + message + '</p></div>');
+            
+            // Position the notification right before the form for better visibility
+            var $form = $('#monikit-translations-form');
+            if ($form.length) {
+                $form.before($notice);
+            } else {
+                // Fallback to top of page
+                $('.wrap h1').after($notice);
+            }
+            
+            // Scroll to notification if it's not visible
+            $('html, body').animate({
+                scrollTop: $notice.offset().top - 50
+            }, 500);
+            
+            // Add a subtle highlight effect to the notification
+            $notice.hide().fadeIn(300).addClass('monikit-notice-highlight');
+            
+            // Auto-dismiss after 8 seconds for success, 10 seconds for error
+            var dismissTime = type === 'success' ? 8000 : 10000;
+            setTimeout(function() {
+                $notice.fadeOut(500, function() {
+                    $(this).remove();
+                });
+            }, dismissTime);
+            
+            // Add visual feedback to the form
+            if (type === 'success') {
+                $('#monikit-translations-form').addClass('saved-successfully');
+                setTimeout(function() {
+                    $('#monikit-translations-form').removeClass('saved-successfully');
+                }, 2000);
             }
         }
     };
