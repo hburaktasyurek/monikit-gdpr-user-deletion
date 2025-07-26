@@ -33,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  * It is used to register all components necessary to run the plugin.
  * 
  * The comment above contains all information about the plugin 
- * that are used by WordPress to differenciate the plugin and register it properly.
+ * that are used by WordPress to differentiate the plugin and register it properly.
  * It also contains further PHPDocs parameter for a better documentation
  * 
  * The function MONIGPDR() is the main function that you will be able to 
