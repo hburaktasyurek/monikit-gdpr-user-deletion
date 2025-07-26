@@ -4,6 +4,8 @@
 
 The `[monigpdr_deletion_form]` shortcode allows you to embed the account deletion form anywhere on your WordPress site. This provides maximum flexibility for placing the deletion functionality where your users need it most.
 
+**Important**: The shortcode will only display if public deletion is enabled in the plugin settings (Admin → Monikit → Settings → Public Deletion Form).
+
 ## Basic Usage
 
 ### Simple Form
@@ -30,8 +32,8 @@ The `[monigpdr_deletion_form]` shortcode allows you to embed the account deletio
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `title` | string | "Delete Account" | Custom title for the form |
-| `subtitle` | string | "Request deletion of your account..." | Custom subtitle/description |
+| `title` | string | "Delete Account" (translated) | Custom title for the form |
+| `subtitle` | string | "Request deletion of your account..." (translated) | Custom subtitle/description |
 | `show_title` | boolean | "true" | Show/hide the title ("true" or "false") |
 | `show_subtitle` | boolean | "true" | Show/hide the subtitle ("true" or "false") |
 | `style` | string | "default" | Form styling ("default", "minimal", "card") |
@@ -40,9 +42,10 @@ The `[monigpdr_deletion_form]` shortcode allows you to embed the account deletio
 ## Style Options
 
 ### 1. Default Style
-- Full styling with background and shadows
-- Shows title and subtitle
+- Full styling with gradient background and shadows
+- Shows title and subtitle by default
 - Best for dedicated pages or sections
+- Professional appearance with rounded corners and modern design
 
 ```
 [monigpdr_deletion_form style="default"]
@@ -53,6 +56,7 @@ The `[monigpdr_deletion_form]` shortcode allows you to embed the account deletio
 - No background or borders
 - Hides header by default
 - Perfect for embedding in existing content
+- Inherits theme styling
 
 ```
 [monigpdr_deletion_form style="minimal" show_title="false" show_subtitle="false"]
@@ -62,6 +66,7 @@ The `[monigpdr_deletion_form]` shortcode allows you to embed the account deletio
 - Card-like appearance with subtle shadow
 - Compact design
 - Good for sidebars or content areas
+- Clean white background with border
 
 ```
 [monigpdr_deletion_form style="card" title="Delete Account"]
@@ -122,53 +127,7 @@ For mobile app deep linking, you can create a dedicated page:
 ]
 ```
 
-## Language Support
-
-The shortcode automatically detects the current language and displays text accordingly:
-
-- **English**: Default language
-- **German**: When WPML/Polylang is set to German
-- **Custom**: Uses your admin settings for email templates
-
-## Security Features
-
-The embedded form includes all security features:
-
-- ✅ CSRF protection with nonces
-- ✅ Email confirmation required
-- ✅ 6-digit verification codes
-- ✅ Rate limiting protection
-- ✅ Input validation and sanitization
-
-## Styling Customization
-
-### Custom CSS Classes
-Add your own styling by using the `class` parameter:
-
-```
-[monigpdr_deletion_form class="my-custom-deletion-form"]
-```
-
-Then add CSS:
-```css
-.my-custom-deletion-form {
-    border: 2px solid #e74c3c;
-    border-radius: 10px;
-    padding: 20px;
-}
-```
-
-### Responsive Design
-The form is fully responsive and works on all devices:
-
-- Mobile phones
-- Tablets
-- Desktop computers
-- High-resolution displays
-
-## Integration Examples
-
-### 1. WooCommerce Integration
+### 5. WooCommerce Integration
 Add to WooCommerce account page:
 
 ```php
@@ -176,7 +135,7 @@ Add to WooCommerce account page:
 echo do_shortcode('[monigpdr_deletion_form style="card" title="Delete My Account"]');
 ```
 
-### 2. BuddyPress Integration
+### 6. BuddyPress Integration
 Add to BuddyPress profile:
 
 ```php
@@ -184,7 +143,7 @@ Add to BuddyPress profile:
 echo do_shortcode('[monigpdr_deletion_form style="minimal"]');
 ```
 
-### 3. Custom Page Template
+### 7. Custom Page Template
 Create a dedicated deletion page:
 
 ```php
@@ -205,22 +164,101 @@ get_header(); ?>
 <?php get_footer(); ?>
 ```
 
+## Language Support
+
+The shortcode automatically detects the current language and displays text accordingly:
+
+- **English**: Default language
+- **German**: When WPML/Polylang is set to German or site language is German
+- **Custom**: Uses your admin settings for email templates
+
+The form includes built-in translations for:
+- Form labels and buttons
+- Placeholder text
+- Help text
+- Confirmation messages
+
+## Security Features
+
+The embedded form includes all security features:
+
+- ✅ CSRF protection with WordPress nonces
+- ✅ Email confirmation required
+- ✅ 6-digit verification codes
+- ✅ Rate limiting protection
+- ✅ Input validation and sanitization
+- ✅ Secure Keycloak API integration
+
+## Form Process
+
+The deletion form follows a 3-step process:
+
+1. **Email Entry**: User enters their email address
+2. **Code Verification**: User enters the 6-digit code sent to their email
+3. **Final Confirmation**: User confirms the irreversible deletion with a checkbox
+
+## Styling Customization
+
+### Custom CSS Classes
+Add your own styling by using the `class` parameter:
+
+```
+[monigpdr_deletion_form class="my-custom-deletion-form"]
+```
+
+Then add CSS:
+```css
+.my-custom-deletion-form {
+    border: 2px solid #e74c3c;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.my-custom-deletion-form .monigpdr-btn-primary {
+    background: #e74c3c;
+    border-color: #e74c3c;
+}
+```
+
+### Responsive Design
+The form is fully responsive and works on all devices:
+
+- Mobile phones (320px+)
+- Tablets (768px+)
+- Desktop computers (1024px+)
+- High-resolution displays
+
+### Accessibility Features
+- Proper ARIA labels
+- Keyboard navigation support
+- High contrast mode support
+- Reduced motion support
+- Screen reader compatible
+
 ## Troubleshooting
 
 ### Form Not Appearing
-1. Check if public deletion is enabled in plugin settings
+1. Check if public deletion is enabled in plugin settings (Admin → Monikit → Settings)
 2. Verify the shortcode syntax
 3. Clear any caching plugins
+4. Check browser console for JavaScript errors
 
 ### Styling Issues
 1. Check for CSS conflicts with your theme
 2. Use browser developer tools to inspect elements
 3. Add custom CSS to override conflicting styles
+4. Ensure the plugin CSS is loading properly
 
 ### JavaScript Errors
-1. Ensure jQuery is loaded
+1. Ensure jQuery is loaded (WordPress includes this by default)
 2. Check browser console for errors
-3. Verify no JavaScript conflicts
+3. Verify no JavaScript conflicts with other plugins
+4. Test with a default WordPress theme
+
+### Language Issues
+1. Check if WPML or Polylang is properly configured
+2. Verify the site language settings
+3. Test with different language settings
 
 ## Best Practices
 
@@ -228,21 +266,25 @@ get_header(); ?>
 - Place in easily accessible locations
 - Consider user privacy and data protection
 - Make it discoverable but not intrusive
+- Follow GDPR requirements for data subject rights
 
 ### 2. Messaging
 - Use clear, understandable language
 - Explain the consequences of deletion
 - Provide alternative options if possible
+- Include warning about irreversible action
 
 ### 3. User Experience
 - Keep forms simple and intuitive
 - Provide clear feedback at each step
 - Ensure mobile-friendly design
+- Test the complete user flow
 
 ### 4. Compliance
 - Follow GDPR requirements
 - Document the deletion process
 - Maintain audit trails
+- Provide clear information about data processing
 
 ## Advanced Usage
 
@@ -282,10 +324,18 @@ Create a completely custom appearance:
 }
 ```
 
+### AJAX Integration
+The form uses AJAX for seamless user experience:
+- No page reloads during form submission
+- Real-time validation
+- Smooth transitions between steps
+- Progress indicators
+
 ## Support
 
 For support and questions:
 - Check the main plugin documentation
 - Review the code comments
 - Test in a staging environment first
-- Contact plugin support if needed 
+- Contact plugin support if needed
+- Check the WordPress admin settings for configuration options 

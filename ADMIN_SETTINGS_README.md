@@ -2,7 +2,7 @@
 
 ## 📋 Overview
 
-This documentation describes the features and usage of the admin settings page for the Monikit GDPR User Data Deletion plugin.
+This documentation describes the features and usage of the admin settings page for the Monikit GDPR User Data Deletion plugin. The plugin provides a comprehensive GDPR-compliant solution for user account deletion with Keycloak integration.
 
 ## 🚀 Features
 
@@ -28,13 +28,23 @@ The Keycloak Base URL field automatically normalizes your input to ensure proper
   - `https://keycloak.example.com/auth/` → `https://keycloak.example.com/auth/`
 
 #### 📧 **Email Templates (Multi-language)**
-- **English Email Template**: Subject and HTML body
-- **German Email Template**: Subject and HTML body
-- **WYSIWYG Editor**: Rich text editor for HTML email templates
+- **English Email Template**: Subject and HTML body with WYSIWYG editor
+- **German Email Template**: Subject and HTML body with WYSIWYG editor
+- **Professional Default Templates**: Pre-configured templates for both languages
 - **Placeholder Support**: `{user_email}`, `{confirmation_link}`, `{confirmation_code}`
+- **Email Preview**: Test email templates before saving
+- **Template Reset**: Load default templates anytime
 
 #### 🌐 **Language Settings**
 - **Default Language**: English or German selection
+- **Translation Management**: Built-in translation system for form strings
+- **Multi-language Support**: Automatic language detection for forms
+
+#### 🎯 **Public Deletion Form Settings**
+- **Enable/Disable**: Toggle public deletion form functionality
+- **Shortcode Support**: `[monigpdr_deletion_form]` for embedding anywhere
+- **Multiple Styles**: Default, minimal, and card styling options
+- **Customizable**: Title, subtitle, and appearance options
 
 #### 🛡️ **Security Features**
 - **Nonce Protection**: WordPress nonce for form security
@@ -42,6 +52,7 @@ The Keycloak Base URL field automatically normalizes your input to ensure proper
 - **Permission Control**: Only users with `manage_options` capability
 - **AJAX Security**: Nonce verification for AJAX requests
 - **Required Field Validation**: Server-side and client-side validation
+- **Rate Limiting**: Built-in protection against abuse
 
 #### 🎨 **User Experience**
 - **Modern UI**: WordPress admin theme compatible design
@@ -51,23 +62,37 @@ The Keycloak Base URL field automatically normalizes your input to ensure proper
 - **Email Preview**: Preview feature to test templates
 - **Keycloak Connection Test**: Real token endpoint testing with access token validation
 - **Required Field Indicators**: Red asterisks (*) for mandatory fields
+- **Success/Error Messages**: Clear feedback for all operations
 
 ## 📁 File Structure
 
 ```
 monikit-gdpr-user-deletion/
+├── monikit-app-gdpr-user-data-deletion.php (Main plugin file)
 ├── core/
-│   ├── class-monikit-app-gdpr-user-data-deletion.php (Main class - updated)
+│   ├── class-monikit-app-gdpr-user-data-deletion.php (Main class)
 │   └── includes/
 │       ├── classes/
-│       │   └── class-monikit-app-gdpr-user-data-deletion-admin.php (NEW - Admin class)
-│       └── assets/
-│           ├── css/
-│           │   └── admin-styles.css (NEW - Admin CSS)
-│           └── js/
-│               └── admin-scripts.js (NEW - Admin JavaScript)
-├── test-admin-page.php (NEW - Test file)
-└── ADMIN_SETTINGS_README.md (NEW - This file)
+│       │   ├── class-monikit-app-gdpr-user-data-deletion-admin.php (Admin class)
+│       │   ├── class-monikit-app-gdpr-user-data-deletion-public.php (Public class)
+│       │   ├── class-monikit-app-gdpr-user-data-deletion-helpers.php (Helpers)
+│       │   ├── class-monikit-app-gdpr-user-data-deletion-settings.php (Settings)
+│       │   └── class-monikit-app-gdpr-user-data-deletion-run.php (Runtime)
+│       ├── assets/
+│       │   ├── css/
+│       │   │   ├── admin-styles.css (Admin CSS)
+│       │   │   └── public-styles.css (Public form CSS)
+│       │   └── js/
+│       │       ├── admin-scripts.js (Admin JavaScript)
+│       │       └── public-scripts.js (Public form JavaScript)
+│       ├── templates/
+│       │   └── deletion-form.php (Form template)
+│       └── integrations/ (Demo integration)
+├── languages/ (Translation files)
+├── vendor/ (Composer dependencies)
+├── ADMIN_SETTINGS_README.md (This file)
+├── SHORTCODE_USAGE.md (Shortcode documentation)
+└── README.md (Main documentation)
 ```
 
 ## 🔧 Installation and Usage
@@ -78,6 +103,7 @@ Activate the plugin in the WordPress admin panel.
 ### 2. Access Admin Menu
 - The "Monikit" menu will appear in the left sidebar of the WordPress admin panel
 - Click on the menu to access the settings page
+- Submenu includes "Settings" and "Translations"
 
 ### 3. Configure Settings
 
@@ -100,10 +126,14 @@ Activate the plugin in the WordPress admin panel.
 #### Language Settings
 1. **Default Language**: Select English or German
 
+#### Public Deletion Form
+1. **Enable Public Deletion**: Check to enable the shortcode functionality
+2. **Shortcode**: Use `[monigpdr_deletion_form]` to embed the form
+
 ### 4. Test and Validate
 - **🔐 Test Keycloak Connection**: Test your Keycloak connection by attempting to retrieve an access token
 - **📧 Preview Email**: Preview email templates
-- **Save Settings**: Save your settings
+- **💾 Save Settings**: Save your settings
 
 ## 🔌 API Usage
 
@@ -132,6 +162,18 @@ add_filter('monikit_email_template_en', function($template, $type) {
 }, 10, 2);
 ```
 
+### Check Public Deletion Status
+
+```php
+// Check if public deletion is enabled
+$is_enabled = MONIGPDR()->helpers->is_public_deletion_enabled();
+
+// Use in conditional logic
+if ($is_enabled) {
+    echo do_shortcode('[monigpdr_deletion_form]');
+}
+```
+
 ## 🎯 Feature Details
 
 ### Email Template Placeholders
@@ -156,7 +198,13 @@ These fields are marked with a red asterisk (*) in the admin interface and will 
 
 ### Default Email Templates
 
-When the plugin is first installed, professional email templates are automatically created for both English and German.
+When the plugin is first installed, professional email templates are automatically created for both English and German. These templates include:
+
+- Professional HTML formatting
+- Responsive design
+- Clear call-to-action buttons
+- Security warnings
+- Proper branding elements
 
 ### Keycloak Connection Testing
 
@@ -187,6 +235,28 @@ The plugin includes a comprehensive two-step Keycloak connection test that valid
 - **Realm Errors**: Realm not found or inaccessible (404)
 - **Server Errors**: Keycloak server issues or configuration problems
 
+### Translation System
+
+The plugin includes a comprehensive translation system:
+
+#### Built-in Translations
+- Form labels and buttons
+- Error messages
+- Success messages
+- Help text
+- Placeholder text
+
+#### Translation Management
+- **Translation Page**: Dedicated admin page for managing translations
+- **PO File Support**: Import/export .po files
+- **Real-time Editing**: Edit translations directly in the admin
+- **Language Detection**: Automatic language detection for forms
+
+#### Supported Languages
+- **English**: Default language
+- **German**: Full translation support
+- **Custom**: Extensible for additional languages
+
 ### Security Measures
 
 - All form data is sanitized using `sanitize_text_field()` and `wp_kses_post()`
@@ -194,6 +264,8 @@ The plugin includes a comprehensive two-step Keycloak connection test that valid
 - Only users with `manage_options` capability can access
 - Password fields are handled securely
 - Required field validation on both client and server side
+- Rate limiting to prevent abuse
+- Input validation and sanitization
 
 ## 🐛 Troubleshooting
 
@@ -201,11 +273,13 @@ The plugin includes a comprehensive two-step Keycloak connection test that valid
 1. Ensure the plugin is activated
 2. Check that you have `manage_options` capability
 3. Enable WordPress debug mode and check for error messages
+4. Check for plugin conflicts
 
 ### Email Templates Not Loading
 1. Ensure the WYSIWYG editor is loaded
 2. Check for JavaScript errors
 3. Check browser console
+4. Verify WordPress version compatibility
 
 ### Keycloak Connection Test Fails
 1. Check that your Keycloak server is accessible
@@ -229,6 +303,20 @@ The plugin includes a comprehensive two-step Keycloak connection test that valid
 1. Fill in all fields marked with red asterisks (*)
 2. Ensure no required fields are left empty
 3. Check that the form validation is working properly
+4. Clear browser cache and try again
+
+### Shortcode Not Working
+1. Ensure public deletion is enabled in settings
+2. Check if the shortcode is properly formatted
+3. Clear any caching plugins
+4. Test with a default WordPress theme
+5. Check browser console for JavaScript errors
+
+### Translation Issues
+1. Check if the translation files are properly loaded
+2. Verify the language settings in WordPress
+3. Clear any caching plugins
+4. Check the translation admin page for errors
 
 ## 📝 Developer Notes
 
@@ -262,18 +350,60 @@ The plugin includes a comprehensive two-step Keycloak connection test that valid
    );
    ```
 
+3. **Adding New Translation String**:
+   ```php
+   // Add to get_translatable_strings() method
+   'new_string_key' => array(
+       'en' => 'English text',
+       'de' => 'German text'
+   )
+   ```
+
 ### CSS Customization
 
-You can customize the appearance of the admin page by editing the `admin-styles.css` file.
+You can customize the appearance of the admin page by editing the `admin-styles.css` file. The CSS is scoped to prevent conflicts with other plugins.
 
 ### JavaScript Customization
 
-You can add additional JavaScript functionality by editing the `admin-scripts.js` file.
+You can add additional JavaScript functionality by editing the `admin-scripts.js` file. The plugin uses vanilla JavaScript and jQuery for compatibility.
+
+### Hooks and Filters
+
+The plugin provides several hooks for customization:
+
+```php
+// Hook into plugin loaded
+add_action('MONIGPDR/plugin_loaded', function() {
+    // Your custom code here
+});
+
+// Filter email templates
+add_filter('monikit_email_template_en', function($template, $type) {
+    // Customize email template
+    return $template;
+}, 10, 2);
+
+// Filter settings
+add_filter('monikit_settings', function($settings) {
+    // Modify settings
+    return $settings;
+});
+```
 
 ## 📞 Support
 
-If you encounter any issues or have feature requests, please open an issue in the GitHub repository.
+If you encounter any issues or have feature requests:
+
+1. **Check Documentation**: Review this README and other documentation files
+2. **Test in Staging**: Always test changes in a staging environment first
+3. **Enable Debug Mode**: Use WordPress debug mode to identify issues
+4. **Check Logs**: Review error logs for detailed information
+5. **Contact Support**: Open an issue in the GitHub repository
 
 ## 📄 License
 
-This plugin is licensed under the GPL v2 license. 
+This plugin is licensed under the GPL v2 license. See the `license.txt` file for details.
+
+## 🔄 Version History
+
+- **1.0.0**: Initial release with Keycloak integration, email templates, and shortcode support 
