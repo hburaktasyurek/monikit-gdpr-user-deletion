@@ -72,6 +72,44 @@
                 e.preventDefault();
                 MonikitAdmin.saveTranslations();
             });
+            
+            			// Logs page functionality
+			if ($('#export-logs').length) {
+				$('#export-logs').on('click', function(e) {
+					e.preventDefault();
+					MonikitAdmin.exportLogs();
+				});
+			}
+			
+			if ($('#cleanup-logs').length) {
+				$('#cleanup-logs').on('click', function(e) {
+					e.preventDefault();
+					MonikitAdmin.cleanupLogs();
+				});
+			}
+			
+			// Bulk actions functionality
+			if ($('#select-all-checkbox').length) {
+				MonikitAdmin.initBulkActions();
+			}
+            
+            // Log details modal
+            $('.view-log-details').on('click', function(e) {
+                e.preventDefault();
+                var logId = $(this).data('log-id');
+                MonikitAdmin.viewLogDetails(logId);
+            });
+            
+            // Close modal
+            $('.monikit-modal-close').on('click', function() {
+                $('.monikit-modal').hide();
+            });
+            
+            $(window).on('click', function(e) {
+                if ($(e.target).hasClass('monikit-modal')) {
+                    $('.monikit-modal').hide();
+                }
+            });
         },
 
         /**
@@ -694,7 +732,275 @@
                     $('#monikit-translations-form').removeClass('saved-successfully');
                 }, 2000);
             }
-        }
+        },
+
+        /**
+         * Export logs to CSV
+         */
+        exportLogs: function() {
+            var $button = $('#export-logs');
+            var originalText = $button.text();
+            
+            $button.prop('disabled', true).text('Exporting...');
+            
+            // Get current filters
+            var filters = {
+                email: $('#email').val() || '',
+                action: $('#action').val() || '',
+                status: $('#status').val() || '',
+                date_from: $('#date_from').val() || '',
+                date_to: $('#date_to').val() || ''
+            };
+            
+            $.post(ajaxurl, {
+                action: 'monikit_export_logs',
+                nonce: $('#monikit_logs_nonce').val(),
+                filters: filters
+            }, function(response) {
+                if (response.success) {
+                    // Create download link
+                    var blob = new Blob([response.data.csv], {type: 'text/csv'});
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'monikit-deletion-logs-' + new Date().toISOString().split('T')[0] + '.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    MonikitAdmin.showNotification('Logs exported successfully.', 'success');
+                } else {
+                    MonikitAdmin.showNotification('Export failed: ' + response.data.message, 'error');
+                }
+            }).fail(function() {
+                MonikitAdmin.showNotification('Export failed. Please try again.', 'error');
+            }).always(function() {
+                $button.prop('disabled', false).text(originalText);
+            });
+        },
+
+        		/**
+		 * Cleanup old logs
+		 */
+		cleanupLogs: function() {
+			var retentionDays = $('#retention-period').val();
+			var retentionText = $('#retention-period option:selected').text();
+			
+			var confirmMessage = 'This will delete logs older than ' + retentionText + '. This action cannot be undone. Continue?';
+			
+			if (!confirm(confirmMessage)) {
+				return;
+			}
+			
+			var $button = $('#cleanup-logs');
+			var originalText = $button.text();
+			
+			$button.prop('disabled', true).text('Cleaning up...');
+			
+			$.post(ajaxurl, {
+				action: 'monikit_cleanup_logs',
+				nonce: $('#monikit_logs_nonce').val(),
+				retention_days: retentionDays
+			}, function(response) {
+				if (response.success) {
+					MonikitAdmin.showNotification(response.data.message, 'success');
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
+				} else {
+					MonikitAdmin.showNotification('Cleanup failed: ' + response.data.message, 'error');
+				}
+			}).fail(function() {
+				MonikitAdmin.showNotification('Cleanup failed. Please try again.', 'error');
+			}).always(function() {
+				$button.prop('disabled', false).text(originalText);
+			});
+		},
+
+        		/**
+		 * View log details
+		 */
+		viewLogDetails: function(logId) {
+			$('#log-details-content').html('<p>Loading...</p>');
+			$('#log-details-modal').show();
+			
+			$.post(ajaxurl, {
+				action: 'monikit_get_log_details',
+				nonce: $('#monikit_logs_nonce').val(),
+				log_id: logId
+			}, function(response) {
+				if (response.success) {
+					$('#log-details-content').html(response.data.html);
+				} else {
+					$('#log-details-content').html('<p>Failed to load log details.</p>');
+				}
+			}).fail(function() {
+				$('#log-details-content').html('<p>Failed to load log details.</p>');
+			});
+		},
+
+		/**
+		 * Initialize bulk actions
+		 */
+		initBulkActions: function() {
+			// Select all checkbox
+			$('#select-all-checkbox').on('change', function() {
+				var isChecked = $(this).is(':checked');
+				$('.log-checkbox').prop('checked', isChecked);
+				MonikitAdmin.updateSelectedCount();
+				MonikitAdmin.updateDeleteButton();
+			});
+
+			// Individual checkboxes
+			$('.log-checkbox').on('change', function() {
+				MonikitAdmin.updateSelectedCount();
+				MonikitAdmin.updateDeleteButton();
+				MonikitAdmin.updateSelectAllCheckbox();
+			});
+
+			// Select all button
+			$('#select-all-logs').on('click', function() {
+				$('.log-checkbox').prop('checked', true);
+				$('#select-all-checkbox').prop('checked', true);
+				MonikitAdmin.updateSelectedCount();
+				MonikitAdmin.updateDeleteButton();
+			});
+
+			// Deselect all button
+			$('#deselect-all-logs').on('click', function() {
+				$('.log-checkbox').prop('checked', false);
+				$('#select-all-checkbox').prop('checked', false);
+				MonikitAdmin.updateSelectedCount();
+				MonikitAdmin.updateDeleteButton();
+			});
+
+			// Delete selected button
+			$('#delete-selected-logs').on('click', function() {
+				MonikitAdmin.deleteSelectedLogs();
+			});
+
+			// Delete single log buttons
+			$('.delete-single-log').on('click', function() {
+				var logId = $(this).data('log-id');
+				MonikitAdmin.deleteSingleLog(logId);
+			});
+		},
+
+		/**
+		 * Update selected count
+		 */
+		updateSelectedCount: function() {
+			var count = $('.log-checkbox:checked').length;
+			$('.selected-count').text(count + ' selected');
+		},
+
+		/**
+		 * Update delete button state
+		 */
+		updateDeleteButton: function() {
+			var count = $('.log-checkbox:checked').length;
+			$('#delete-selected-logs').prop('disabled', count === 0);
+		},
+
+		/**
+		 * Update select all checkbox state
+		 */
+		updateSelectAllCheckbox: function() {
+			var totalCheckboxes = $('.log-checkbox').length;
+			var checkedCheckboxes = $('.log-checkbox:checked').length;
+			
+			if (checkedCheckboxes === 0) {
+				$('#select-all-checkbox').prop('indeterminate', false).prop('checked', false);
+			} else if (checkedCheckboxes === totalCheckboxes) {
+				$('#select-all-checkbox').prop('indeterminate', false).prop('checked', true);
+			} else {
+				$('#select-all-checkbox').prop('indeterminate', true);
+			}
+		},
+
+		/**
+		 * Delete selected logs
+		 */
+		deleteSelectedLogs: function() {
+			var selectedIds = [];
+			$('.log-checkbox:checked').each(function() {
+				selectedIds.push($(this).val());
+			});
+
+			if (selectedIds.length === 0) {
+				MonikitAdmin.showNotification('No logs selected for deletion.', 'error');
+				return;
+			}
+
+			var confirmMessage = 'Are you sure you want to delete ' + selectedIds.length + ' selected log entries? This action cannot be undone.';
+			
+			if (!confirm(confirmMessage)) {
+				return;
+			}
+
+			var $button = $('#delete-selected-logs');
+			var originalText = $button.text();
+			
+			$button.prop('disabled', true).text('Deleting...');
+			
+			$.post(ajaxurl, {
+				action: 'monikit_delete_selected_logs',
+				nonce: $('#monikit_logs_nonce').val(),
+				log_ids: selectedIds
+			}, function(response) {
+				if (response.success) {
+					MonikitAdmin.showNotification(response.data.message, 'success');
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
+				} else {
+					MonikitAdmin.showNotification('Delete failed: ' + response.data.message, 'error');
+				}
+			}).fail(function() {
+				MonikitAdmin.showNotification('Delete failed. Please try again.', 'error');
+			}).always(function() {
+				$button.prop('disabled', false).text(originalText);
+			});
+		},
+
+		/**
+		 * Delete single log
+		 */
+		deleteSingleLog: function(logId) {
+			var confirmMessage = 'Are you sure you want to delete this log entry? This action cannot be undone.';
+			
+			if (!confirm(confirmMessage)) {
+				return;
+			}
+
+			var $button = $('.delete-single-log[data-log-id="' + logId + '"]');
+			var originalText = $button.text();
+			
+			$button.prop('disabled', true).text('Deleting...');
+			
+			$.post(ajaxurl, {
+				action: 'monikit_delete_single_log',
+				nonce: $('#monikit_logs_nonce').val(),
+				log_id: logId
+			}, function(response) {
+				if (response.success) {
+					MonikitAdmin.showNotification(response.data.message, 'success');
+					$button.closest('tr').fadeOut(500, function() {
+						$(this).remove();
+						MonikitAdmin.updateSelectedCount();
+						MonikitAdmin.updateDeleteButton();
+						MonikitAdmin.updateSelectAllCheckbox();
+					});
+				} else {
+					MonikitAdmin.showNotification('Delete failed: ' + response.data.message, 'error');
+				}
+			}).fail(function() {
+				MonikitAdmin.showNotification('Delete failed. Please try again.', 'error');
+			}).always(function() {
+				$button.prop('disabled', false).text(originalText);
+			});
+		}
     };
 
 })(jQuery); 

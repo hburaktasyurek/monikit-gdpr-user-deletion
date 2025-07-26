@@ -39,6 +39,11 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		add_action( 'wp_ajax_monikit_preview_email_template', array( $this, 'preview_email_template' ) );
 		add_action( 'wp_ajax_monikit_load_default_templates', array( $this, 'load_default_templates' ) );
 		add_action( 'wp_ajax_monikit_save_translations', array( $this, 'save_translations' ) );
+		add_action( 'wp_ajax_monikit_export_logs', array( $this, 'export_logs' ) );
+		add_action( 'wp_ajax_monikit_cleanup_logs', array( $this, 'cleanup_logs' ) );
+		add_action( 'wp_ajax_monikit_get_log_details', array( $this, 'get_log_details' ) );
+		add_action( 'wp_ajax_monikit_delete_selected_logs', array( $this, 'delete_selected_logs' ) );
+		add_action( 'wp_ajax_monikit_delete_single_log', array( $this, 'delete_single_log' ) );
 	}
 
 	/**
@@ -67,6 +72,16 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'manage_options',
 			'monikit_translations',
 			array( $this, 'translations_page' )
+		);
+		
+		// Add Logs submenu
+		add_submenu_page(
+			'monikit_settings',
+			__( 'Deletion Logs', 'monikit-app-gdpr-user-data-deletion' ),
+			__( 'Logs', 'monikit-app-gdpr-user-data-deletion' ),
+			'manage_options',
+			'monikit_logs',
+			array( $this, 'logs_page' )
 		);
 	}
 
@@ -1487,5 +1502,622 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	 */
 	private function escape_po_string( $string ) {
 		return str_replace( array( '"', '\\' ), array( '\\"', '\\\\' ), $string );
+	}
+
+	/**
+	 * Logs page
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function logs_page() {
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'monikit-app-gdpr-user-data-deletion' ) );
+		}
+
+		// Get filter parameters
+		$page = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
+		$email_filter = isset( $_GET['email'] ) ? sanitize_text_field( $_GET['email'] ) : '';
+		$action_filter = isset( $_GET['action'] ) ? sanitize_text_field( $_GET['action'] ) : '';
+		$status_filter = isset( $_GET['status'] ) ? sanitize_text_field( $_GET['status'] ) : '';
+		$date_from = isset( $_GET['date_from'] ) ? sanitize_text_field( $_GET['date_from'] ) : '';
+		$date_to = isset( $_GET['date_to'] ) ? sanitize_text_field( $_GET['date_to'] ) : '';
+
+		// Get logs
+		$args = array(
+			'page' => $page,
+			'per_page' => 20,
+			'email' => $email_filter,
+			'action' => $action_filter,
+			'status' => $status_filter,
+			'date_from' => $date_from,
+			'date_to' => $date_to,
+			'orderby' => 'created_at',
+			'order' => 'DESC'
+		);
+
+		$logs_data = MONIGPDR()->logs->get_logs( $args );
+		$logs = $logs_data['logs'];
+		$total_items = $logs_data['total_items'];
+		$total_pages = $logs_data['total_pages'];
+		$current_page = $logs_data['current_page'];
+
+		// Get statistics
+		$stats = MONIGPDR()->logs->get_statistics( 'month' );
+
+		// Get labels
+		$action_labels = MONIGPDR()->logs->get_action_labels();
+		$status_labels = MONIGPDR()->logs->get_status_labels();
+		$status_colors = MONIGPDR()->logs->get_status_colors();
+
+		?>
+		<div class="wrap">
+			<input type="hidden" id="monikit_logs_nonce" value="<?php echo wp_create_nonce( 'monikit_logs_nonce' ); ?>">
+			<h1><?php echo esc_html__( 'Deletion Logs', 'monikit-app-gdpr-user-data-deletion' ); ?></h1>
+			
+			<!-- Statistics Cards -->
+			<div class="monikit-stats-cards">
+				<div class="monikit-stat-card">
+					<h3><?php echo esc_html__( 'Total Requests', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="stat-number"><?php echo esc_html( $stats['totals']->total ?? 0 ); ?></div>
+				</div>
+				<div class="monikit-stat-card">
+					<h3><?php echo esc_html__( 'Successful', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="stat-number success"><?php echo esc_html( $stats['totals']->successful ?? 0 ); ?></div>
+				</div>
+				<div class="monikit-stat-card">
+					<h3><?php echo esc_html__( 'Failed', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="stat-number failed"><?php echo esc_html( $stats['totals']->failed ?? 0 ); ?></div>
+				</div>
+				<div class="monikit-stat-card">
+					<h3><?php echo esc_html__( 'Pending', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="stat-number pending"><?php echo esc_html( $stats['totals']->pending ?? 0 ); ?></div>
+				</div>
+				<div class="monikit-stat-card">
+					<h3><?php echo esc_html__( 'Completed', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="stat-number completed"><?php echo esc_html( $stats['totals']->completed ?? 0 ); ?></div>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="monikit-logs-filters">
+				<form method="get" action="">
+					<input type="hidden" name="page" value="monikit_logs">
+					
+					<div class="filter-row">
+						<div class="filter-group">
+							<label for="email"><?php echo esc_html__( 'Email:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+							<input type="text" id="email" name="email" value="<?php echo esc_attr( $email_filter ); ?>" placeholder="<?php echo esc_attr__( 'Filter by email', 'monikit-app-gdpr-user-data-deletion' ); ?>">
+						</div>
+						
+						<div class="filter-group">
+							<label for="action"><?php echo esc_html__( 'Action:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+							<select id="action" name="action">
+								<option value=""><?php echo esc_html__( 'All Actions', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+								<?php foreach ( $action_labels as $key => $label ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $action_filter, $key ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						
+						<div class="filter-group">
+							<label for="status"><?php echo esc_html__( 'Status:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+							<select id="status" name="status">
+								<option value=""><?php echo esc_html__( 'All Statuses', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+								<?php foreach ( $status_labels as $key => $label ) : ?>
+									<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $status_filter, $key ); ?>><?php echo esc_html( $label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						
+						<div class="filter-group">
+							<label for="date_from"><?php echo esc_html__( 'From:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+							<input type="date" id="date_from" name="date_from" value="<?php echo esc_attr( $date_from ); ?>">
+						</div>
+						
+						<div class="filter-group">
+							<label for="date_to"><?php echo esc_html__( 'To:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+							<input type="date" id="date_to" name="date_to" value="<?php echo esc_attr( $date_to ); ?>">
+						</div>
+						
+						<div class="filter-actions">
+							<button type="submit" class="button button-primary"><?php echo esc_html__( 'Filter', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+							<a href="?page=monikit_logs" class="button"><?php echo esc_html__( 'Clear', 'monikit-app-gdpr-user-data-deletion' ); ?></a>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<!-- Actions -->
+			<div class="monikit-logs-actions">
+				<button type="button" class="button" id="export-logs"><?php echo esc_html__( 'Export CSV', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+				
+				<div class="bulk-actions-section">
+					<h3><?php echo esc_html__( 'Bulk Actions', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="bulk-actions">
+						<button type="button" class="button" id="select-all-logs"><?php echo esc_html__( 'Select All', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+						<button type="button" class="button" id="deselect-all-logs"><?php echo esc_html__( 'Deselect All', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+						<button type="button" class="button button-danger" id="delete-selected-logs" disabled><?php echo esc_html__( 'Delete Selected', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+						<span class="selected-count"><?php echo esc_html__( '0 selected', 'monikit-app-gdpr-user-data-deletion' ); ?></span>
+					</div>
+					<div class="bulk-info">
+						<p><?php echo esc_html__( 'Select individual log entries to delete them. This action cannot be undone.', 'monikit-app-gdpr-user-data-deletion' ); ?></p>
+					</div>
+				</div>
+				
+				<div class="cleanup-section">
+					<h3><?php echo esc_html__( 'Cleanup Old Logs', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+					<div class="cleanup-options">
+						<label for="retention-period"><?php echo esc_html__( 'Delete logs older than:', 'monikit-app-gdpr-user-data-deletion' ); ?></label>
+						<select id="retention-period">
+							<option value="30"><?php echo esc_html__( '30 days', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+							<option value="90"><?php echo esc_html__( '3 months', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+							<option value="180"><?php echo esc_html__( '6 months', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+							<option value="365" selected><?php echo esc_html__( '1 year', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+							<option value="730"><?php echo esc_html__( '2 years', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+							<option value="1095"><?php echo esc_html__( '3 years', 'monikit-app-gdpr-user-data-deletion' ); ?></option>
+						</select>
+						<button type="button" class="button button-primary" id="cleanup-logs"><?php echo esc_html__( 'Cleanup', 'monikit-app-gdpr-user-data-deletion' ); ?></button>
+					</div>
+					<div class="cleanup-info">
+						<p><?php echo esc_html__( 'This will permanently delete logs older than the selected period. This action cannot be undone.', 'monikit-app-gdpr-user-data-deletion' ); ?></p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Logs Table -->
+			<div class="monikit-logs-table-wrapper">
+				<table class="wp-list-table widefat fixed striped">
+					<thead>
+						<tr>
+							<th class="check-column">
+								<input type="checkbox" id="select-all-checkbox">
+							</th>
+							<th><?php echo esc_html__( 'ID', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Email', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Action', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Status', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Message', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'IP Address', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Date', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+							<th><?php echo esc_html__( 'Actions', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php if ( empty( $logs ) ) : ?>
+							<tr>
+								<td colspan="9"><?php echo esc_html__( 'No logs found.', 'monikit-app-gdpr-user-data-deletion' ); ?></td>
+							</tr>
+						<?php else : ?>
+							<?php foreach ( $logs as $log ) : ?>
+								<tr>
+									<td class="check-column">
+										<input type="checkbox" class="log-checkbox" value="<?php echo esc_attr( $log->id ); ?>">
+									</td>
+									<td><?php echo esc_html( $log->id ); ?></td>
+									<td><?php echo esc_html( $log->email ); ?></td>
+									<td><?php echo esc_html( $action_labels[ $log->action ] ?? $log->action ); ?></td>
+									<td>
+										<span class="status-badge status-<?php echo esc_attr( $log->status ); ?>" style="background-color: <?php echo esc_attr( $status_colors[ $log->status ] ?? '#666' ); ?>">
+											<?php echo esc_html( $status_labels[ $log->status ] ?? $log->status ); ?>
+										</span>
+									</td>
+									<td><?php echo esc_html( wp_trim_words( $log->message, 10 ) ); ?></td>
+									<td><?php echo esc_html( $log->ip_address ); ?></td>
+									<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->created_at ) ) ); ?></td>
+									<td>
+										<button type="button" class="button button-small view-log-details" data-log-id="<?php echo esc_attr( $log->id ); ?>">
+											<?php echo esc_html__( 'View', 'monikit-app-gdpr-user-data-deletion' ); ?>
+										</button>
+										<button type="button" class="button button-small button-danger delete-single-log" data-log-id="<?php echo esc_attr( $log->id ); ?>" title="<?php echo esc_attr__( 'Delete this log entry', 'monikit-app-gdpr-user-data-deletion' ); ?>">
+											<?php echo esc_html__( 'Delete', 'monikit-app-gdpr-user-data-deletion' ); ?>
+										</button>
+									</td>
+								</tr>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Pagination -->
+			<?php if ( $total_pages > 1 ) : ?>
+				<div class="tablenav">
+					<div class="tablenav-pages">
+						<?php
+						echo paginate_links( array(
+							'base' => add_query_arg( 'paged', '%#%' ),
+							'format' => '',
+							'prev_text' => __( '&laquo;' ),
+							'next_text' => __( '&raquo;' ),
+							'total' => $total_pages,
+							'current' => $current_page,
+							'add_args' => array(
+								'email' => $email_filter,
+								'action' => $action_filter,
+								'status' => $status_filter,
+								'date_from' => $date_from,
+								'date_to' => $date_to
+							)
+						) );
+						?>
+					</div>
+				</div>
+			<?php endif; ?>
+		</div>
+
+		<!-- Log Details Modal -->
+		<div id="log-details-modal" class="monikit-modal" style="display: none;">
+			<div class="monikit-modal-content">
+				<div class="monikit-modal-header">
+					<h2><?php echo esc_html__( 'Log Details', 'monikit-app-gdpr-user-data-deletion' ); ?></h2>
+					<span class="monikit-modal-close">&times;</span>
+				</div>
+				<div class="monikit-modal-body">
+					<div id="log-details-content"></div>
+				</div>
+			</div>
+		</div>
+
+		<script>
+		jQuery(document).ready(function($) {
+			// Export logs
+			$('#export-logs').on('click', function() {
+				var filters = {
+					email: '<?php echo esc_js( $email_filter ); ?>',
+					action: '<?php echo esc_js( $action_filter ); ?>',
+					status: '<?php echo esc_js( $status_filter ); ?>',
+					date_from: '<?php echo esc_js( $date_from ); ?>',
+					date_to: '<?php echo esc_js( $date_to ); ?>'
+				};
+				
+				$.post(ajaxurl, {
+					action: 'monikit_export_logs',
+					nonce: '<?php echo wp_create_nonce( 'monikit_logs_nonce' ); ?>',
+					filters: filters
+				}, function(response) {
+					if (response.success) {
+						// Create download link
+						var blob = new Blob([response.data.csv], {type: 'text/csv'});
+						var url = window.URL.createObjectURL(blob);
+						var a = document.createElement('a');
+						a.href = url;
+						a.download = 'monikit-deletion-logs-' + new Date().toISOString().split('T')[0] + '.csv';
+						document.body.appendChild(a);
+						a.click();
+						document.body.removeChild(a);
+						window.URL.revokeObjectURL(url);
+					} else {
+						alert('<?php echo esc_js( __( 'Export failed.', 'monikit-app-gdpr-user-data-deletion' ) ); ?>');
+					}
+				});
+			});
+
+			// Cleanup logs
+			$('#cleanup-logs').on('click', function() {
+				if (confirm('<?php echo esc_js( __( 'This will delete logs older than 1 year. Continue?', 'monikit-app-gdpr-user-data-deletion' ) ); ?>')) {
+					$.post(ajaxurl, {
+						action: 'monikit_cleanup_logs',
+						nonce: '<?php echo wp_create_nonce( 'monikit_logs_nonce' ); ?>'
+					}, function(response) {
+						if (response.success) {
+							alert('<?php echo esc_js( __( 'Cleanup completed.', 'monikit-app-gdpr-user-data-deletion' ) ); ?>');
+							location.reload();
+						} else {
+							alert('<?php echo esc_js( __( 'Cleanup failed.', 'monikit-app-gdpr-user-data-deletion' ) ); ?>');
+						}
+					});
+				}
+			});
+
+			// View log details
+			$('.view-log-details').on('click', function() {
+				var logId = $(this).data('log-id');
+				$('#log-details-content').html('<p><?php echo esc_js( __( 'Loading...', 'monikit-app-gdpr-user-data-deletion' ) ); ?></p>');
+				$('#log-details-modal').show();
+				
+				// Load log details via AJAX
+				$.post(ajaxurl, {
+					action: 'monikit_get_log_details',
+					nonce: '<?php echo wp_create_nonce( 'monikit_logs_nonce' ); ?>',
+					log_id: logId
+				}, function(response) {
+					if (response.success) {
+						$('#log-details-content').html(response.data.html);
+					} else {
+						$('#log-details-content').html('<p><?php echo esc_js( __( 'Failed to load log details.', 'monikit-app-gdpr-user-data-deletion' ) ); ?></p>');
+					}
+				});
+			});
+
+			// Close modal
+			$('.monikit-modal-close').on('click', function() {
+				$('#log-details-modal').hide();
+			});
+
+			$(window).on('click', function(e) {
+				if ($(e.target).hasClass('monikit-modal')) {
+					$('#log-details-modal').hide();
+				}
+			});
+		});
+		</script>
+		<?php
+	}
+
+	/**
+	 * Export logs AJAX handler
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function export_logs() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_logs_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		$filters = isset( $_POST['filters'] ) ? $_POST['filters'] : array();
+		
+		$csv = MONIGPDR()->logs->export_csv( $filters );
+		
+		wp_send_json_success( array( 'csv' => $csv ) );
+	}
+
+	/**
+	 * Cleanup logs AJAX handler
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function cleanup_logs() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_logs_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Get retention period from request
+		$retention_days = isset( $_POST['retention_days'] ) ? intval( $_POST['retention_days'] ) : 365;
+		
+		// Validate retention period
+		if ( $retention_days < 1 || $retention_days > 3650 ) { // Max 10 years
+			wp_send_json_error( array( 'message' => __( 'Invalid retention period. Please select a period between 1 day and 10 years.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Get count of logs that will be deleted
+		$logs_to_delete = MONIGPDR()->logs->get_logs_count_older_than( $retention_days );
+		
+		// Perform cleanup
+		$deleted = MONIGPDR()->logs->cleanup_old_logs( $retention_days );
+		
+		// Get human-readable period
+		$period_text = $this->get_human_readable_period( $retention_days );
+		
+		wp_send_json_success( array( 
+			'message' => sprintf( __( 'Deleted %d log entries older than %s.', 'monikit-app-gdpr-user-data-deletion' ), $deleted, $period_text ),
+			'deleted_count' => $deleted,
+			'logs_to_delete' => $logs_to_delete,
+			'retention_days' => $retention_days
+		) );
+	}
+
+	/**
+	 * Get human-readable period text
+	 *
+	 * @access	private
+	 * @since	1.0.0
+	 * @param	int	$days	Number of days
+	 * @return	string	Human-readable period
+	 */
+	private function get_human_readable_period( $days ) {
+		if ( $days == 1 ) {
+			return __( '1 day', 'monikit-app-gdpr-user-data-deletion' );
+		} elseif ( $days < 30 ) {
+			return sprintf( __( '%d days', 'monikit-app-gdpr-user-data-deletion' ), $days );
+		} elseif ( $days < 365 ) {
+			$months = round( $days / 30 );
+			return sprintf( __( '%d month(s)', 'monikit-app-gdpr-user-data-deletion' ), $months );
+		} else {
+			$years = round( $days / 365, 1 );
+			return sprintf( __( '%.1f year(s)', 'monikit-app-gdpr-user-data-deletion' ), $years );
+		}
+	}
+
+	/**
+	 * Get log details AJAX handler
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function get_log_details() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_logs_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		$log_id = intval( $_POST['log_id'] );
+		$log = MONIGPDR()->logs->get_log( $log_id );
+		
+		if ( ! $log ) {
+			wp_send_json_error( array( 'message' => __( 'Log not found.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		$action_labels = MONIGPDR()->logs->get_action_labels();
+		$status_labels = MONIGPDR()->logs->get_status_labels();
+		$status_colors = MONIGPDR()->logs->get_status_colors();
+
+		// Parse JSON data
+		$request_data = ! empty( $log->request_data ) ? json_decode( $log->request_data, true ) : null;
+		$response_data = ! empty( $log->response_data ) ? json_decode( $log->response_data, true ) : null;
+
+		ob_start();
+		?>
+		<div class="log-details">
+			<table class="widefat">
+				<tr>
+					<th><?php echo esc_html__( 'ID', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->id ); ?></td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'Email', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->email ); ?></td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'Action', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $action_labels[ $log->action ] ?? $log->action ); ?></td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'Status', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td>
+						<span class="status-badge status-<?php echo esc_attr( $log->status ); ?>" style="background-color: <?php echo esc_attr( $status_colors[ $log->status ] ?? '#666' ); ?>">
+							<?php echo esc_html( $status_labels[ $log->status ] ?? $log->status ); ?>
+						</span>
+					</td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'Message', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->message ); ?></td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'IP Address', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->ip_address ); ?></td>
+				</tr>
+				<tr>
+					<th><?php echo esc_html__( 'User Agent', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->user_agent ); ?></td>
+				</tr>
+				<?php if ( ! empty( $log->keycloak_user_id ) ) : ?>
+				<tr>
+					<th><?php echo esc_html__( 'Keycloak User ID', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->keycloak_user_id ); ?></td>
+				</tr>
+				<?php endif; ?>
+				<?php if ( ! empty( $log->keycloak_realm ) ) : ?>
+				<tr>
+					<th><?php echo esc_html__( 'Keycloak Realm', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( $log->keycloak_realm ); ?></td>
+				</tr>
+				<?php endif; ?>
+				<tr>
+					<th><?php echo esc_html__( 'Created At', 'monikit-app-gdpr-user-data-deletion' ); ?></th>
+					<td><?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $log->created_at ) ) ); ?></td>
+				</tr>
+			</table>
+
+			<?php if ( $request_data ) : ?>
+			<h3><?php echo esc_html__( 'Request Data', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+			<pre><?php echo esc_html( json_encode( $request_data, JSON_PRETTY_PRINT ) ); ?></pre>
+			<?php endif; ?>
+
+			<?php if ( $response_data ) : ?>
+			<h3><?php echo esc_html__( 'Response Data', 'monikit-app-gdpr-user-data-deletion' ); ?></h3>
+			<pre><?php echo esc_html( json_encode( $response_data, JSON_PRETTY_PRINT ) ); ?></pre>
+			<?php endif; ?>
+		</div>
+		<?php
+		$html = ob_get_clean();
+
+		wp_send_json_success( array( 'html' => $html ) );
+	}
+
+	/**
+	 * Delete selected logs AJAX handler
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function delete_selected_logs() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_logs_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Get selected log IDs
+		$log_ids = isset( $_POST['log_ids'] ) ? $_POST['log_ids'] : array();
+		
+		if ( empty( $log_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'No logs selected for deletion.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Validate log IDs
+		$log_ids = array_map( 'intval', $log_ids );
+		$log_ids = array_filter( $log_ids );
+
+		if ( empty( $log_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid log IDs provided.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Delete the logs
+		$deleted = MONIGPDR()->logs->delete_logs_by_ids( $log_ids );
+		
+		wp_send_json_success( array( 
+			'message' => sprintf( __( 'Successfully deleted %d log entries.', 'monikit-app-gdpr-user-data-deletion' ), $deleted ),
+			'deleted_count' => $deleted,
+			'log_ids' => $log_ids
+		) );
+	}
+
+	/**
+	 * Delete single log AJAX handler
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function delete_single_log() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_logs_nonce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Check user capabilities
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have sufficient permissions.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Get log ID
+		$log_id = isset( $_POST['log_id'] ) ? intval( $_POST['log_id'] ) : 0;
+		
+		if ( ! $log_id ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid log ID provided.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
+
+		// Delete the log
+		$deleted = MONIGPDR()->logs->delete_log_by_id( $log_id );
+		
+		if ( $deleted ) {
+			wp_send_json_success( array( 
+				'message' => __( 'Log entry deleted successfully.', 'monikit-app-gdpr-user-data-deletion' ),
+				'log_id' => $log_id
+			) );
+		} else {
+			wp_send_json_error( array( 'message' => __( 'Failed to delete log entry.', 'monikit-app-gdpr-user-data-deletion' ) ) );
+		}
 	}
 } 

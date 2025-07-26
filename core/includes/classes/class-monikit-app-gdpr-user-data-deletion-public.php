@@ -256,8 +256,25 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$email = sanitize_email( $_POST['email'] );
 		
 		if ( ! is_email( $email ) ) {
+			// Log failed request
+			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Invalid email address provided.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
 			wp_send_json_error( array(
 				'message' => __( 'Please enter a valid email address.', 'monikit-app-gdpr-user-data-deletion' )
+			));
+		}
+
+		// Check if public deletion is enabled
+		if ( ! $this->is_public_deletion_enabled() ) {
+			// Log failed request
+			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Public deletion not enabled.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
+			wp_send_json_error( array(
+				'message' => __( 'Account deletion is not available.', 'monikit-app-gdpr-user-data-deletion' )
 			));
 		}
 
@@ -279,11 +296,21 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$email_sent = $this->send_confirmation_email( $email, $confirmation_code );
 		
 		if ( $email_sent ) {
+			// Log successful request and email sending
+			MONIGPDR()->logs->log_action( $email, 'request', 'pending', __( 'Deletion request submitted and confirmation email sent. Awaiting user confirmation.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
 			wp_send_json_success( array(
 				'message' => __( 'Confirmation code sent to your email address.', 'monikit-app-gdpr-user-data-deletion' ),
 				'show_code_input' => true
 			));
 		} else {
+			// Log failed email sending
+			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Failed to send confirmation email.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
 			wp_send_json_error( array(
 				'message' => __( 'Failed to send confirmation email. Please try again.', 'monikit-app-gdpr-user-data-deletion' )
 			));
@@ -307,6 +334,11 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code = sanitize_text_field( $_POST['code'] );
 		
 		if ( ! is_email( $email ) || empty( $code ) ) {
+			// Log failed confirmation
+			MONIGPDR()->logs->log_action( $email, 'confirmation', 'failed', __( 'Invalid email or confirmation code provided.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
 			wp_send_json_error( array(
 				'message' => __( 'Please provide valid email and confirmation code.', 'monikit-app-gdpr-user-data-deletion' )
 			));
@@ -316,6 +348,11 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code_data = get_transient( 'monigpdr_deletion_code_' . md5( $email ) );
 		
 		if ( ! $code_data || $code_data['used'] || $code_data['expires'] < time() || $code_data['code'] !== $code ) {
+			// Log failed confirmation
+			MONIGPDR()->logs->log_action( $email, 'confirmation', 'failed', __( 'Invalid or expired confirmation code.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_POST
+			) );
+			
 			wp_send_json_error( array(
 				'message' => __( 'Invalid or expired confirmation code.', 'monikit-app-gdpr-user-data-deletion' )
 			));
@@ -325,15 +362,37 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code_data['used'] = true;
 		set_transient( 'monigpdr_deletion_code_' . md5( $email ), $code_data, 60 * 60 );
 
+		// Log successful confirmation
+		MONIGPDR()->logs->log_action( $email, 'confirmation', 'success', __( 'Email confirmation successful. Proceeding with account deletion.', 'monikit-app-gdpr-user-data-deletion' ), array(
+			'request' => $_POST
+		) );
+
 		// Process the deletion
 		$deletion_result = $this->process_account_deletion( $email );
 		
 		if ( $deletion_result['success'] ) {
+			// Update the original request status to completed
+			MONIGPDR()->logs->update_log_status( $email, 'request', 'completed', __( 'Deletion request completed successfully.', 'monikit-app-gdpr-user-data-deletion' ) );
+			
+			// Log successful deletion from Keycloak
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'success', __( 'Account successfully deleted from Keycloak.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'keycloak_user_id' => $deletion_result['keycloak_user_id'] ?? null,
+				'response' => $deletion_result
+			) );
+			
 			wp_send_json_success( array(
 				'message' => __( 'Your account has been successfully deleted.', 'monikit-app-gdpr-user-data-deletion' ),
 				'deleted' => true
 			));
 		} else {
+			// Update the original request status to failed
+			MONIGPDR()->logs->update_log_status( $email, 'request', 'failed', __( 'Deletion request failed.', 'monikit-app-gdpr-user-data-deletion' ) );
+			
+			// Log failed deletion from Keycloak
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', $deletion_result['message'], array(
+				'response' => $deletion_result
+			) );
+			
 			wp_send_json_error( array(
 				'message' => $deletion_result['message']
 			));
@@ -537,6 +596,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code = isset( $_GET['code'] ) ? sanitize_text_field( $_GET['code'] ) : '';
 		
 		if ( empty( $email ) || empty( $code ) ) {
+			// Log failed confirmation
+			MONIGPDR()->logs->log_action( $email, 'confirmation', 'failed', __( 'Invalid confirmation link parameters.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_GET
+			) );
 			wp_die( __( 'Invalid confirmation link parameters.', 'monikit-app-gdpr-user-data-deletion' ) );
 		}
 		
@@ -545,6 +608,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code_data = get_transient( $transient_key );
 		
 		if ( ! $code_data || $code_data['used'] || $code_data['expires'] < time() || $code_data['code'] !== $code ) {
+			// Log failed confirmation
+			MONIGPDR()->logs->log_action( $email, 'confirmation', 'failed', __( 'Invalid or expired confirmation code.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'request' => $_GET
+			) );
 			wp_die( __( 'Invalid or expired confirmation code.', 'monikit-app-gdpr-user-data-deletion' ) );
 		}
 		
@@ -552,10 +619,24 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		$code_data['used'] = true;
 		set_transient( $transient_key, $code_data, 60 * 60 );
 		
+		// Log successful confirmation
+		MONIGPDR()->logs->log_action( $email, 'confirmation', 'success', __( 'Email confirmation successful. Proceeding with account deletion.', 'monikit-app-gdpr-user-data-deletion' ), array(
+			'request' => $_GET
+		) );
+		
 		// Process the deletion
 		$deletion_result = $this->process_account_deletion( $email );
 		
 		if ( $deletion_result['success'] ) {
+			// Update the original request status to completed
+			MONIGPDR()->logs->update_log_status( $email, 'request', 'completed', __( 'Deletion request completed successfully.', 'monikit-app-gdpr-user-data-deletion' ) );
+			
+			// Log successful deletion from Keycloak
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'success', __( 'Account successfully deleted from Keycloak.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'keycloak_user_id' => $deletion_result['keycloak_user_id'] ?? null,
+				'response' => $deletion_result
+			) );
+			
 			// Delete the transient
 			delete_transient( $transient_key );
 			
@@ -571,6 +652,14 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 				array( 'response' => 200 )
 			);
 		} else {
+			// Update the original request status to failed
+			MONIGPDR()->logs->update_log_status( $email, 'request', 'failed', __( 'Deletion request failed.', 'monikit-app-gdpr-user-data-deletion' ) );
+			
+			// Log failed deletion from Keycloak
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', $deletion_result['message'], array(
+				'response' => $deletion_result
+			) );
+			
 			wp_die( esc_html( $deletion_result['message'] ) );
 		}
 	}
@@ -594,6 +683,9 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			 empty( $settings['keycloak_admin_username'] ) || 
 			 empty( $settings['keycloak_admin_password'] ) ) {
 			
+			// Log configuration error
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', __( 'Keycloak settings not configured.', 'monikit-app-gdpr-user-data-deletion' ) );
+			
 			error_log( 'Monikit GDPR: Keycloak settings not configured for user deletion' );
 			return array(
 				'success' => false,
@@ -606,15 +698,14 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			$deletion_result = $this->delete_user_from_keycloak( $email, $settings );
 			
 			if ( $deletion_result['success'] ) {
-				// Log successful deletion
 				error_log( sprintf( 'Monikit GDPR: User account successfully deleted for email: %s', $email ) );
 				
 				return array(
 					'success' => true,
-					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' )
+					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' ),
+					'keycloak_user_id' => $deletion_result['keycloak_user_id'] ?? null
 				);
 			} else {
-				// Log deletion failure
 				error_log( sprintf( 'Monikit GDPR: Failed to delete user account for email: %s. Error: %s', $email, $deletion_result['message'] ) );
 				
 				return array(
@@ -625,6 +716,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			
 		} catch ( Exception $e ) {
 			// Log exception
+			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', $e->getMessage(), array(
+				'keycloak_realm' => $settings['keycloak_realm'] ?? null
+			) );
+			
 			error_log( sprintf( 'Monikit GDPR: Exception during user deletion for email: %s. Error: %s', $email, $e->getMessage() ) );
 			
 			return array(
@@ -679,7 +774,8 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			if ( $delete_result ) {
 				return array(
 					'success' => true,
-					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' )
+					'message' => __( 'Account deleted successfully.', 'monikit-app-gdpr-user-data-deletion' ),
+					'keycloak_user_id' => $user_id
 				);
 			} else {
 				return array(

@@ -1,460 +1,554 @@
-/* Monikit Admin Settings Styles */
+/* Monikit Admin Styles */
 
-.monikit-settings-wrap {
+/* General Admin Styles */
+.monikit-admin-page {
     max-width: 1200px;
     margin: 20px 0;
 }
 
-.monikit-settings-wrap h1 {
+.monikit-admin-page h1 {
     color: #23282d;
-    font-size: 23px;
-    font-weight: 400;
-    margin: 0 0 1rem 0;
-    padding: 9px 0 4px 0;
-    line-height: 1.3;
+    margin-bottom: 30px;
 }
 
-.monikit-settings-wrap .form-table {
+/* Settings Form Styles */
+.monikit-settings-form {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.monikit-settings-form h2 {
     margin-top: 0;
+    color: #23282d;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
 }
 
-.monikit-settings-wrap .form-table th {
+.monikit-settings-form .form-table th {
     width: 200px;
     padding: 20px 10px 20px 0;
-    line-height: 1.3;
-    vertical-align: top;
 }
 
-.monikit-settings-wrap .form-table td {
+.monikit-settings-form .form-table td {
     padding: 15px 10px;
-    line-height: 1.3;
-    vertical-align: middle;
 }
 
-.monikit-settings-wrap .form-table input[type="text"],
-.monikit-settings-wrap .form-table input[type="password"],
-.monikit-settings-wrap .form-table input[type="url"],
-.monikit-settings-wrap .form-table select {
-    width: 400px;
-    max-width: 100%;
+.monikit-settings-form input[type="text"],
+.monikit-settings-form input[type="password"],
+.monikit-settings-form select {
+    width: 100%;
+    max-width: 400px;
 }
 
-.monikit-settings-wrap .form-table textarea {
-    width: 400px;
-    max-width: 100%;
-    min-height: 100px;
-}
-
-.monikit-settings-wrap .description {
+.monikit-settings-form .description {
     color: #666;
     font-style: italic;
-    margin: 5px 0 0 0;
-    line-height: 1.4;
+    margin-top: 5px;
 }
 
-.monikit-settings-wrap .section-description {
-    background: #f9f9f9;
-    border-left: 4px solid #0073aa;
-    padding: 12px 15px;
-    margin: 20px 0;
-    border-radius: 3px;
+/* Required Field Indicator */
+.monikit-required::after {
+    content: " *";
+    color: #dc3232;
+    font-weight: bold;
 }
 
-.monikit-settings-wrap .section-description p {
-    margin: 0;
-    color: #555;
-    font-size: 13px;
-    line-height: 1.4;
+/* Test Connection Button */
+.monikit-test-connection {
+    margin-top: 10px;
 }
 
-/* WYSIWYG Editor Styles */
-.monikit-settings-wrap .wp-editor-wrap {
-    max-width: 600px;
+.monikit-test-connection .button {
+    margin-right: 10px;
 }
 
-.monikit-settings-wrap .wp-editor-container {
-    border: 1px solid #ddd;
-    border-radius: 3px;
-}
-
-/* Password field styling */
-.monikit-settings-wrap input[type="password"] {
-    font-family: monospace;
-    letter-spacing: 2px;
-}
-
-/* Success message styling */
-.monikit-settings-wrap .notice-success {
-    border-left-color: #46b450;
-}
-
-/* Error message styling */
-.monikit-settings-wrap .notice-error {
-    border-left-color: #dc3232;
-}
-
-/* Warning message styling */
-.monikit-settings-wrap .notice-warning {
-    border-left-color: #ffb900;
-}
-
-/* Translation form success feedback */
-#monikit-translations-form.saved-successfully {
-    animation: monikit-save-success 2s ease-in-out;
-    border: 2px solid #46b450;
-    border-radius: 5px;
-    padding: 15px;
-    background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-    box-shadow: 0 2px 8px rgba(70, 180, 80, 0.1);
-}
-
-@keyframes monikit-save-success {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(70, 180, 80, 0.1);
-    }
-    50% {
-        transform: scale(1.02);
-        box-shadow: 0 4px 16px rgba(70, 180, 80, 0.2);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(70, 180, 80, 0.1);
-    }
-}
-
-/* Translation form styles */
-.monikit-translations-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    background: #fff;
-    border-radius: 5px;
-    overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.monikit-translations-table th {
-    background: #f8f9fa;
-    padding: 15px;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 2px solid #e1e5e9;
-    color: #23282d;
-}
-
-.monikit-translations-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #e1e5e9;
-    vertical-align: top;
-}
-
-.monikit-translations-table tr:hover {
-    background: #f8f9fa;
-}
-
-.monikit-translations-table input[type="text"] {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    font-size: 14px;
-    transition: border-color 0.2s ease;
-}
-
-.monikit-translations-table input[type="text"]:focus {
-    border-color: #0073aa;
-    outline: none;
-    box-shadow: 0 0 0 1px #0073aa;
-}
-
-.monikit-translations-table .string-key {
-    font-family: monospace;
-    background: #f1f1f1;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    color: #555;
-    word-break: break-all;
-}
-
-.monikit-translations-table .string-context {
-    font-size: 12px;
-    color: #666;
-    font-style: italic;
-    margin-top: 4px;
-}
-
-/* Save button styling */
-#save-translations {
-    background: #0073aa;
-    border-color: #0073aa;
-    color: #fff;
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 3px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+/* Email Template Styles */
+.monikit-email-templates {
     margin-top: 20px;
 }
 
-#save-translations:hover {
-    background: #005a87;
-    border-color: #005a87;
-    transform: translateY(-1px);
+.monikit-email-templates .wp-editor-container {
+    border: 1px solid #ddd;
+}
+
+.monikit-email-templates .wp-editor-area {
+    min-height: 300px;
+}
+
+/* Preview Button */
+.monikit-preview-email {
+    margin-top: 10px;
+}
+
+/* Translation Page Styles */
+.monikit-translations-page {
+    max-width: 1200px;
+}
+
+.monikit-translations-tabs {
+    margin-bottom: 20px;
+}
+
+.monikit-translations-tabs .nav-tab {
+    margin-right: 5px;
+}
+
+.monikit-translations-content {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.monikit-translation-group {
+    margin-bottom: 30px;
+}
+
+.monikit-translation-group h3 {
+    margin-top: 0;
+    color: #23282d;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.monikit-translation-row {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: center;
+}
+
+.monikit-translation-row label {
+    width: 200px;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.monikit-translation-row input[type="text"] {
+    flex: 1;
+    max-width: 400px;
+}
+
+.monikit-translation-actions {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+/* Logs Page Styles */
+.monikit-stats-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.monikit-stat-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-#save-translations:disabled {
-    background: #ccc;
-    border-color: #ccc;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* Spinner styling */
-.spinner.is-active {
-    visibility: visible;
-    float: none;
-    margin-left: 10px;
-}
-
-/* Enhanced notification styling */
-.monikit-sticky-notice {
-    position: relative;
-    z-index: 1000;
-    margin: 20px 0;
-    border-radius: 5px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.monikit-notice-highlight {
-    animation: monikit-notice-pulse 2s ease-in-out;
-}
-
-@keyframes monikit-notice-pulse {
-    0% {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    50% {
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-    }
-    100% {
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-}
-
-/* Success notification specific styling */
-.monikit-sticky-notice.notice-success {
-    border-left: 4px solid #46b450;
-    background: linear-gradient(135deg, #f0f9f0 0%, #e8f5e8 100%);
-}
-
-/* Error notification specific styling */
-.monikit-sticky-notice.notice-error {
-    border-left: 4px solid #dc3232;
-    background: linear-gradient(135deg, #fef7f7 0%, #fdf0f0 100%);
-}
-
-/* Custom warning notification styling */
-.monikit-settings-wrap .notice-warning p {
-    color: #856404;
-}
-
-.monikit-settings-wrap .notice-warning strong {
-    color: #856404;
-}
-
-/* Info message styling */
-.monikit-settings-wrap .notice-info {
-    border-left-color: #00a0d2;
-}
-
-/* Responsive design */
-@media screen and (max-width: 782px) {
-    .monikit-settings-wrap .form-table th,
-    .monikit-settings-wrap .form-table td {
-        display: block;
-        width: 100%;
-        padding: 10px 0;
-    }
-    
-    .monikit-settings-wrap .form-table input[type="text"],
-    .monikit-settings-wrap .form-table input[type="password"],
-    .monikit-settings-wrap .form-table input[type="url"],
-    .monikit-settings-wrap .form-table select,
-    .monikit-settings-wrap .form-table textarea {
-        width: 100%;
-    }
-    
-    .monikit-settings-wrap .wp-editor-wrap {
-        max-width: 100%;
-    }
-}
-
-/* Placeholder highlighting */
-.monikit-settings-wrap .placeholder-info {
-    background: #f0f8ff;
-    border: 1px solid #b3d9ff;
-    border-radius: 3px;
-    padding: 10px;
-    margin: 10px 0;
-}
-
-.monikit-settings-wrap .placeholder-info h4 {
-    margin: 0 0 8px 0;
-    color: #0073aa;
+.monikit-stat-card h3 {
+    margin: 0 0 10px 0;
+    color: #666;
     font-size: 14px;
+    font-weight: normal;
 }
 
-.monikit-settings-wrap .placeholder-info code {
-    background: #fff;
-    padding: 2px 4px;
-    border-radius: 2px;
-    font-family: monospace;
-    color: #d73a49;
-}
-
-/* Settings sections */
-.monikit-settings-wrap .settings-section {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    border-radius: 3px;
-    margin-bottom: 20px;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
-}
-
-.monikit-settings-wrap .settings-section h2 {
-    margin: 0;
-    padding: 15px 20px;
-    border-bottom: 1px solid #ccd0d4;
-    background: #f9f9f9;
-    font-size: 14px;
-    font-weight: 600;
+.monikit-stat-card .stat-number {
+    font-size: 32px;
+    font-weight: bold;
     color: #23282d;
 }
 
-.monikit-settings-wrap .settings-section .inside {
+.monikit-stat-card .stat-number.success {
+    color: #28a745;
+}
+
+.monikit-stat-card .stat-number.failed {
+    color: #dc3545;
+}
+
+.monikit-stat-card .stat-number.pending {
+    color: #ffc107;
+}
+
+.stat-number.completed {
+    color: #17a2b8;
+}
+
+/* Logs Filters */
+.monikit-logs-filters {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
     padding: 20px;
-    margin: 0;
+    margin-bottom: 20px;
 }
 
-/* Submit button styling */
-.monikit-settings-wrap .submit {
-    padding: 20px 0;
+.monikit-logs-filters .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: end;
+}
+
+.monikit-logs-filters .filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.monikit-logs-filters .filter-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #23282d;
+}
+
+.monikit-logs-filters .filter-group input,
+.monikit-logs-filters .filter-group select {
+    min-width: 150px;
+}
+
+.monikit-logs-filters .filter-actions {
+    display: flex;
+    gap: 10px;
+    align-items: end;
+}
+
+/* Logs Actions */
+.monikit-logs-actions {
+    margin-bottom: 20px;
+}
+
+.monikit-logs-actions .button {
+    margin-right: 10px;
+}
+
+/* Bulk Actions Section */
+.bulk-actions-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
     margin-top: 20px;
-    border-top: 1px solid #ddd;
 }
 
-.monikit-settings-wrap .submit .button-primary {
-    background: #0073aa;
-    border-color: #0073aa;
+.bulk-actions-section h3 {
+    margin: 0 0 15px 0;
+    color: #23282d;
+    font-size: 16px;
+}
+
+.bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.bulk-actions .button {
+    margin: 0;
+}
+
+.bulk-actions .button-danger {
+    background: #dc3232;
+    border-color: #dc3232;
     color: #fff;
-    text-decoration: none;
-    padding: 5px 15px;
+}
+
+.bulk-actions .button-danger:hover {
+    background: #c92626;
+    border-color: #c92626;
+}
+
+.bulk-actions .button-danger:disabled {
+    background: #ccc;
+    border-color: #ccc;
+    cursor: not-allowed;
+}
+
+.selected-count {
+    font-weight: bold;
+    color: #0073aa;
+    margin-left: 10px;
+}
+
+.bulk-info {
+    background: #f9f9f9;
+    border-left: 4px solid #dc3232;
+    padding: 10px 15px;
     border-radius: 3px;
-    font-size: 13px;
-    line-height: normal;
-    height: auto;
-    cursor: pointer;
-    transition: all 0.2s ease;
 }
 
-.monikit-settings-wrap .submit .button-primary:hover {
-    background: #005a87;
-    border-color: #005a87;
-}
-
-/* Keycloak test section styling */
-.monikit-settings-wrap .keycloak-test-section {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-}
-
-.monikit-settings-wrap .keycloak-test-result {
-    margin-top: 10px;
-}
-
-.monikit-settings-wrap .keycloak-test-result .notice {
+.bulk-info p {
     margin: 0;
-    padding: 10px;
-    border-radius: 4px;
-}
-
-/* Test connection button styling */
-.monikit-settings-wrap .test-keycloak-connection {
-    background: #46b450;
-    border-color: #46b450;
-    color: #fff;
-    font-weight: 600;
-}
-
-.monikit-settings-wrap .test-keycloak-connection:hover {
-    background: #389a3f;
-    border-color: #389a3f;
-}
-
-.monikit-settings-wrap .test-keycloak-connection:disabled {
-    background: #ccc;
-    border-color: #ccc;
-    color: #666;
-    cursor: not-allowed;
-}
-
-/* Email preview section styling */
-.monikit-settings-wrap .email-preview-section {
-    margin-top: 15px;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-}
-
-.monikit-settings-wrap .email-preview-result {
-    margin-top: 10px;
-}
-
-.monikit-settings-wrap .email-preview-result .notice {
-    margin: 0;
-    padding: 10px;
-    border-radius: 4px;
-}
-
-/* Email preview button styling */
-.monikit-settings-wrap .preview-email-en,
-.monikit-settings-wrap .preview-email-de {
-    background: #f7f7f7;
-    border-color: #ccc;
     color: #555;
+    font-size: 13px;
+    line-height: 1.4;
 }
 
-.monikit-settings-wrap .preview-email-en:hover,
-.monikit-settings-wrap .preview-email-de:hover {
-    background: #eee;
-    border-color: #999;
+/* Checkbox Column */
+.check-column {
+    width: 30px;
+    text-align: center;
 }
 
-/* Load default templates button styling */
-.monikit-settings-wrap .load-default-templates {
-    background: #0073aa;
-    border-color: #0073aa;
+.check-column input[type="checkbox"] {
+    margin: 0;
+}
+
+/* Cleanup Section */
+.cleanup-section {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.cleanup-section h3 {
+    margin: 0 0 15px 0;
+    color: #23282d;
+    font-size: 16px;
+}
+
+.cleanup-options {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.cleanup-options label {
+    font-weight: bold;
+    color: #23282d;
+    white-space: nowrap;
+}
+
+.cleanup-options select {
+    min-width: 150px;
+}
+
+.cleanup-info {
+    background: #f9f9f9;
+    border-left: 4px solid #0073aa;
+    padding: 10px 15px;
+    border-radius: 3px;
+}
+
+.cleanup-info p {
+    margin: 0;
+    color: #555;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Logs Table */
+.monikit-logs-table-wrapper {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.monikit-logs-table-wrapper table {
+    margin: 0;
+}
+
+.monikit-logs-table-wrapper th {
+    background: #f9f9f9;
+    font-weight: bold;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
     color: #fff;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
-.monikit-settings-wrap .load-default-templates:hover {
-    background: #005a87;
-    border-color: #005a87;
+.status-badge.status-success {
+    background-color: #28a745;
 }
 
-.monikit-settings-wrap .load-default-templates:disabled {
-    background: #ccc;
-    border-color: #ccc;
-    color: #666;
-    cursor: not-allowed;
+.status-badge.status-failed {
+    background-color: #dc3545;
+}
+
+.status-badge.status-pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+/* Modal Styles */
+.monikit-modal {
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.monikit-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.monikit-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.monikit-modal-header h2 {
+    margin: 0;
+    color: #23282d;
+}
+
+.monikit-modal-close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.monikit-modal-close:hover {
+    color: #000;
+}
+
+.monikit-modal-body {
+    padding: 20px;
+}
+
+/* Log Details */
+.log-details table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.log-details th {
+    background: #f9f9f9;
+    padding: 10px;
+    text-align: left;
+    font-weight: bold;
+    width: 30%;
+    border: 1px solid #ddd;
+}
+
+.log-details td {
+    padding: 10px;
+    border: 1px solid #ddd;
+}
+
+.log-details h3 {
+    margin: 20px 0 10px 0;
+    color: #23282d;
+}
+
+.log-details pre {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .monikit-stats-cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .monikit-logs-filters .filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .monikit-logs-filters .filter-group {
+        width: 100%;
+    }
+    
+    .monikit-logs-filters .filter-actions {
+        justify-content: center;
+    }
+    
+    .bulk-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .bulk-actions .button {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .selected-count {
+        text-align: center;
+        margin: 10px 0;
+    }
+    
+    .cleanup-options {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+    
+    .cleanup-options select {
+        width: 100%;
+    }
+    
+    .monikit-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+    
+    .log-details th,
+    .log-details td {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .log-details th {
+        border-bottom: none;
+    }
+    
+    .log-details td {
+        border-top: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .monikit-stats-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .monikit-stat-card .stat-number {
+        font-size: 24px;
+    }
 } 

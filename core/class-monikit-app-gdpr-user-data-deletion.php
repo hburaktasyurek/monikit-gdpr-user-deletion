@@ -76,6 +76,15 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 		public $public;
 
 		/**
+		 * MONIGPDR logs object.
+		 *
+		 * @access	public
+		 * @since	1.0.0
+		 * @var		object|Monikit_App_Gdpr_User_Data_Deletion_Logs
+		 */
+		public $logs;
+
+		/**
 		 * Throw error on object clone.
 		 *
 		 * Cloning instances of the class is forbidden.
@@ -119,6 +128,7 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 				self::$instance->settings		= new Monikit_App_Gdpr_User_Data_Deletion_Settings();
 				self::$instance->admin		= new Monikit_App_Gdpr_User_Data_Deletion_Admin();
 				self::$instance->public		= new Monikit_App_Gdpr_User_Data_Deletion_Public();
+				self::$instance->logs		= new Monikit_App_Gdpr_User_Data_Deletion_Logs();
 
 				//Fire the plugin logic
 				new Monikit_App_Gdpr_User_Data_Deletion_Run();
@@ -145,6 +155,7 @@ if ( ! class_exists( 'Monikit_App_Gdpr_User_Data_Deletion' ) ) :
 		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-settings.php';
 		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-admin.php';
 		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-public.php';
+		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-logs.php';
 
 		require_once MONIGPDR_PLUGIN_DIR . 'core/includes/classes/class-monikit-app-gdpr-user-data-deletion-run.php';
 		}
