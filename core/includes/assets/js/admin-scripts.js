@@ -30,6 +30,8 @@
             this.initPlaceholderInfo();
             this.initFormValidation();
             this.initWysiwygEnhancements();
+            this.initButtonHandlers();
+            this.checkAndLoadDefaults();
         },
 
         /**
@@ -51,6 +53,12 @@
             $('.preview-email-de').on('click', function(e) {
                 e.preventDefault();
                 MonikitAdmin.previewEmailTemplate('de');
+            });
+            
+            // Load default templates button
+            $('.load-default-templates').on('click', function(e) {
+                e.preventDefault();
+                MonikitAdmin.loadDefaultTemplates();
             });
         },
 
@@ -304,6 +312,24 @@
         },
 
         /**
+         * Show notification in email preview section
+         */
+        showEmailPreviewNotification: function(message, type) {
+            var $resultDiv = $('.email-preview-result');
+            
+            // Create notification element
+            var $notification = $('<div class="email-preview-notification notice notice-' + type + ' is-dismissible" style="margin: 10px 0; padding: 10px;"><p>' + message + '</p></div>');
+            
+            // Clear previous result and show new one
+            $resultDiv.html($notification).show();
+            
+            // Auto-dismiss after 8 seconds
+            setTimeout(function() {
+                $resultDiv.fadeOut();
+            }, 8000);
+        },
+
+        /**
          * Test Keycloak connection
          */
         testKeycloakConnection: function() {
@@ -360,55 +386,169 @@
         },
 
         /**
+         * Check if email fields are empty and load defaults if needed
+         */
+        checkAndLoadDefaults: function() {
+            // Check if email fields are empty
+            var emailSubjectEn = $('input[name="monikit_settings[email_subject_en]"]').val().trim();
+            var emailSubjectDe = $('input[name="monikit_settings[email_subject_de]"]').val().trim();
+            
+            // Check WYSIWYG content
+            var emailHtmlEn = '';
+            var emailHtmlDe = '';
+            
+            if (typeof tinymce !== 'undefined') {
+                if (tinymce.get('email_html_en')) {
+                    emailHtmlEn = tinymce.get('email_html_en').getContent().trim();
+                }
+                if (tinymce.get('email_html_de')) {
+                    emailHtmlDe = tinymce.get('email_html_de').getContent().trim();
+                }
+            } else {
+                emailHtmlEn = $('textarea[name="monikit_settings[email_html_en]"]').val().trim();
+                emailHtmlDe = $('textarea[name="monikit_settings[email_html_de]"]').val().trim();
+            }
+            
+            // If all email fields are empty, automatically load defaults
+            if (!emailSubjectEn && !emailSubjectDe && !emailHtmlEn && !emailHtmlDe) {
+                console.log('Email fields are empty, loading default templates...');
+                this.loadDefaultTemplates();
+            }
+        },
+
+        /**
+         * Load default email templates
+         */
+        loadDefaultTemplates: function() {
+            var $button = $('.load-default-templates');
+            var originalText = $button.text();
+            
+            $button.prop('disabled', true).text('Loading templates...');
+            
+            // Send AJAX request to get default templates
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'monikit_load_default_templates',
+                    nonce: monikit_ajax.nonce
+                },
+                success: function(response) {
+                    console.log('Default templates response:', response);
+                    if (response.success) {
+                        // Fill in the email fields with default templates
+                        $('input[name="monikit_settings[email_subject_en]"]').val(response.data.email_subject_en);
+                        $('input[name="monikit_settings[email_subject_de]"]').val(response.data.email_subject_de);
+                        
+                        // For WYSIWYG editors, we need to set the content differently
+                        if (typeof tinymce !== 'undefined') {
+                            // Set content for English WYSIWYG
+                            if (tinymce.get('email_html_en')) {
+                                tinymce.get('email_html_en').setContent(response.data.email_html_en);
+                            }
+                            
+                            // Set content for German WYSIWYG
+                            if (tinymce.get('email_html_de')) {
+                                tinymce.get('email_html_de').setContent(response.data.email_html_de);
+                            }
+                        } else {
+                            // Fallback for textarea if WYSIWYG is not available
+                            $('textarea[name="monikit_settings[email_html_en]"]').val(response.data.email_html_en);
+                            $('textarea[name="monikit_settings[email_html_de]"]').val(response.data.email_html_de);
+                        }
+                        
+                        MonikitAdmin.showEmailPreviewNotification('Default templates loaded successfully!', 'success');
+                    } else {
+                        MonikitAdmin.showEmailPreviewNotification('Failed to load default templates.', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('AJAX Error:', xhr, status, error);
+                    MonikitAdmin.showEmailPreviewNotification('Failed to load default templates. Please try again.', 'error');
+                },
+                complete: function() {
+                    $button.prop('disabled', false).text(originalText);
+                }
+            });
+        },
+
+        /**
          * Preview email template
          */
         previewEmailTemplate: function(language) {
             var $button = $('.preview-email-' + language);
             var originalText = $button.text();
             
-            $button.prop('disabled', true).text('Generating preview...');
-            
-            // Get template content
-            var subject = $('input[name="monikit_settings[email_subject_' + language + ']"]').val();
-            var html = $('textarea[name="monikit_settings[email_html_' + language + ']"]').val();
-            
-            if (!subject || !html) {
-                MonikitAdmin.showNotification('Please fill in both subject and body fields.', 'warning');
+            try {
+                $button.prop('disabled', true).text('Generating preview...');
+                
+                // Add a timeout to prevent button from getting stuck
+                var timeoutId = setTimeout(function() {
+                    $button.prop('disabled', false).text(originalText);
+                    MonikitAdmin.showEmailPreviewNotification('Preview generation timed out. Please try again.', 'warning');
+                }, 10000); // 10 second timeout
+                
+                // Get template content
+                var subject = $('input[name="monikit_settings[email_subject_' + language + ']"]').val();
+                var html = '';
+                
+                // Get content from WYSIWYG editor or textarea
+                if (typeof tinymce !== 'undefined' && tinymce.get('email_html_' + language)) {
+                    html = tinymce.get('email_html_' + language).getContent();
+                } else {
+                    html = $('textarea[name="monikit_settings[email_html_' + language + ']"]').val();
+                }
+                
+                if (!subject || !html) {
+                    MonikitAdmin.showEmailPreviewNotification('Please fill in both subject and body fields.', 'warning');
+                    $button.prop('disabled', false).text(originalText);
+                    return;
+                }
+                
+                // Replace placeholders with sample data
+                var previewHtml = html
+                    .replace(/{user_email}/g, 'user@example.com')
+                    .replace(/{confirmation_link}/g, 'https://example.com/confirm/123456')
+                    .replace(/{confirmation_code}/g, '123456');
+                
+                // Open preview in new window
+                var previewWindow = window.open('', '_blank', 'width=800,height=600');
+                if (previewWindow) {
+                    previewWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Email Preview - ${subject}</title>
+                            <style>
+                                body { font-family: Arial, sans-serif; margin: 20px; }
+                                .email-preview { max-width: 600px; margin: 0 auto; }
+                                .subject { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
+                                .content { line-height: 1.6; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="email-preview">
+                                <div class="subject">Subject: ${subject}</div>
+                                <div class="content">${previewHtml}</div>
+                            </div>
+                        </body>
+                        </html>
+                    `);
+                    previewWindow.document.close();
+                } else {
+                    MonikitAdmin.showEmailPreviewNotification('Popup blocked. Please allow popups for this site.', 'warning');
+                }
+                
+                // Clear the timeout since preview was successful
+                clearTimeout(timeoutId);
+                
+            } catch (error) {
+                console.error('Preview error:', error);
+                MonikitAdmin.showEmailPreviewNotification('Error generating preview: ' + error.message, 'error');
+                clearTimeout(timeoutId);
+            } finally {
                 $button.prop('disabled', false).text(originalText);
-                return;
             }
-            
-            // Replace placeholders with sample data
-            var previewHtml = html
-                .replace(/{user_email}/g, 'user@example.com')
-                .replace(/{confirmation_link}/g, '<a href="#">https://example.com/confirm/123456</a>')
-                .replace(/{confirmation_code}/g, '123456');
-            
-            // Open preview in new window
-            var previewWindow = window.open('', '_blank', 'width=800,height=600');
-            previewWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Email Preview - ${subject}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .email-preview { max-width: 600px; margin: 0 auto; }
-                        .subject { font-size: 18px; font-weight: bold; margin-bottom: 20px; }
-                        .content { line-height: 1.6; }
-                    </style>
-                </head>
-                <body>
-                    <div class="email-preview">
-                        <div class="subject">Subject: ${subject}</div>
-                        <div class="content">${previewHtml}</div>
-                    </div>
-                </body>
-                </html>
-            `);
-            previewWindow.document.close();
-            
-            $button.prop('disabled', false).text(originalText);
         }
     };
 

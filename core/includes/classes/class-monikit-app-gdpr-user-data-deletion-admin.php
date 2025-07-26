@@ -37,6 +37,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		// AJAX handlers
 		add_action( 'wp_ajax_monikit_test_keycloak_connection', array( $this, 'test_keycloak_connection' ) );
 		add_action( 'wp_ajax_monikit_preview_email_template', array( $this, 'preview_email_template' ) );
+		add_action( 'wp_ajax_monikit_load_default_templates', array( $this, 'load_default_templates' ) );
 	}
 
 	/**
@@ -184,7 +185,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		$description = isset( $args['description'] ) ? $args['description'] : '';
 		$required = isset( $args['required'] ) ? $args['required'] : false;
 		
-		$current_settings = get_option( $this->option_name, array() );
+		$current_settings = $this->get_settings();
 		$current_value = isset( $current_settings[ $field_key ] ) ? $current_settings[ $field_key ] : '';
 
 		switch ( $field_type ) {
@@ -314,6 +315,18 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 
 	public function email_templates_section_callback() {
 		echo '<p>' . esc_html__( 'Configure email templates for user notifications. Available placeholders: {user_email}, {confirmation_link}, {confirmation_code}', 'monikit-app-gdpr-user-data-deletion' ) . '</p>';
+		echo '<div class="email-preview-section">';
+		echo '<button type="button" class="button button-secondary preview-email-en" style="margin-right: 10px;">';
+		echo esc_html__( '📧 Preview English Email', 'monikit-app-gdpr-user-data-deletion' );
+		echo '</button>';
+		echo '<button type="button" class="button button-secondary preview-email-de" style="margin-right: 10px;">';
+		echo esc_html__( '📧 Preview German Email', 'monikit-app-gdpr-user-data-deletion' );
+		echo '</button>';
+		echo '<button type="button" class="button button-secondary load-default-templates" style="margin-right: 10px;">';
+		echo esc_html__( '📝 Load Default Templates', 'monikit-app-gdpr-user-data-deletion' );
+		echo '</button>';
+		echo '<div class="email-preview-result" style="margin-top: 10px; display: none;"></div>';
+		echo '</div>';
 	}
 
 	public function language_section_callback() {
@@ -454,14 +467,6 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 				
 				<div class="submit">
 					<?php submit_button( __( 'Save Settings', 'monikit-app-gdpr-user-data-deletion' ) ); ?>
-					
-					<button type="button" class="button button-secondary preview-email-en" style="margin-left: 10px;">
-						<?php esc_html_e( '📧 Preview English Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
-					</button>
-					
-					<button type="button" class="button button-secondary preview-email-de" style="margin-left: 10px;">
-						<?php esc_html_e( '📧 Preview German Email', 'monikit-app-gdpr-user-data-deletion' ); ?>
-					</button>
 				</div>
 			</form>
 		</div>
@@ -933,6 +938,36 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 				'message' => sprintf( __( 'Realm access failed with status code: %d', 'monikit-app-gdpr-user-data-deletion' ), $status_code )
 			);
 		}
+	}
+
+	/**
+	 * Load default email templates via AJAX
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function load_default_templates() {
+		// Verify nonce
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'monikit_admin_nonce' ) ) {
+			wp_die( __( 'Security check failed.', 'monikit-app-gdpr-user-data-deletion' ) );
+		}
+
+		// Check permissions
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( __( 'You do not have sufficient permissions to access this page.', 'monikit-app-gdpr-user-data-deletion' ) );
+		}
+
+		// Get default templates
+		$default_templates = array(
+			'email_subject_en' => __( 'Confirm Your Data Deletion Request', 'monikit-app-gdpr-user-data-deletion' ),
+			'email_html_en' => $this->get_default_email_template_en(),
+			'email_subject_de' => __( 'Bestätigen Sie Ihre Datenlöschungsanfrage', 'monikit-app-gdpr-user-data-deletion' ),
+			'email_html_de' => $this->get_default_email_template_de(),
+		);
+
+		// Return the default templates
+		wp_send_json_success( $default_templates );
 	}
 
 	/**
