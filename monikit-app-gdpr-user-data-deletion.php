@@ -11,7 +11,7 @@
  * Plugin Name:   Monikit App GDPR User Data Deletion
  * Plugin URI:    https://github.com/hburaktasyurek/monikit-gdpr-user-deletion
  * Description:   Allows Monikit users to request deletion or anonymization of their account in accordance with GDPR using secure Keycloak API integration.
- * Version:       1.1.0
+ * Version:       1.2.0
  * Author:        Hasan Burak TASYUREK
  * Author URI:    https://hbglobal.dev
  * Text Domain:   monikit-app-gdpr-user-data-deletion
@@ -47,7 +47,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 define( 'MONIGPDR_NAME',			'Monikit App GDPR User Data Deletion' );
 
 // Plugin version
-define( 'MONIGPDR_VERSION',		'1.1.0' );
+define( 'MONIGPDR_VERSION',		'1.2.0' );
 
 // Plugin Root File
 define( 'MONIGPDR_PLUGIN_FILE',	__FILE__ );
