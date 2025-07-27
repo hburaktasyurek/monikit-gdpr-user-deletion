@@ -344,6 +344,30 @@
         },
 
         /**
+         * Show notification near a specific element
+         */
+        showNotificationNear: function(message, type, $targetElement) {
+            type = type || 'info';
+            
+            var $notification = $('<div class="notice notice-' + type + ' is-dismissible monikit-inline-notification"><p>' + message + '</p></div>');
+            
+            // Position the notification after the target element
+            $targetElement.after($notification);
+            
+            // Scroll to the notification smoothly
+            $('html, body').animate({
+                scrollTop: $notification.offset().top - 50
+            }, 300);
+            
+            // Auto dismiss after 5 seconds
+            setTimeout(function() {
+                $notification.fadeOut(function() {
+                    $(this).remove();
+                });
+            }, 5000);
+        },
+
+        /**
          * Show notification in Keycloak test section
          */
         showKeycloakTestNotification: function(message, type) {
@@ -964,43 +988,75 @@
 			});
 		},
 
-		/**
-		 * Delete single log
-		 */
-		deleteSingleLog: function(logId) {
-			var confirmMessage = 'Are you sure you want to delete this log entry? This action cannot be undone.';
-			
-			if (!confirm(confirmMessage)) {
-				return;
-			}
+		        /**
+         * Delete single log
+         */
+        deleteSingleLog: function(logId) {
+            var confirmMessage = 'Are you sure you want to delete this log entry? This action cannot be undone.';
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
 
-			var $button = $('.delete-single-log[data-log-id="' + logId + '"]');
-			var originalText = $button.text();
-			
-			$button.prop('disabled', true).text('Deleting...');
-			
-			$.post(ajaxurl, {
-				action: 'monikit_delete_single_log',
-				nonce: $('#monikit_logs_nonce').val(),
-				log_id: logId
-			}, function(response) {
-				if (response.success) {
-					MonikitAdmin.showNotification(response.data.message, 'success');
-					$button.closest('tr').fadeOut(500, function() {
-						$(this).remove();
-						MonikitAdmin.updateSelectedCount();
-						MonikitAdmin.updateDeleteButton();
-						MonikitAdmin.updateSelectAllCheckbox();
-					});
-				} else {
-					MonikitAdmin.showNotification('Delete failed: ' + response.data.message, 'error');
-				}
-			}).fail(function() {
-				MonikitAdmin.showNotification('Delete failed. Please try again.', 'error');
-			}).always(function() {
-				$button.prop('disabled', false).text(originalText);
-			});
-		}
+            var $button = $('.delete-single-log[data-log-id="' + logId + '"]');
+            var originalText = $button.text();
+            
+            $button.prop('disabled', true).text('Deleting...');
+            
+            $.post(ajaxurl, {
+                action: 'monikit_delete_single_log',
+                nonce: $('#monikit_logs_nonce').val(),
+                log_id: logId
+            }, function(response) {
+                if (response.success) {
+                    MonikitAdmin.showNotification(response.data.message, 'success');
+                    $button.closest('tr').fadeOut(500, function() {
+                        $(this).remove();
+                        MonikitAdmin.updateSelectedCount();
+                        MonikitAdmin.updateDeleteButton();
+                        MonikitAdmin.updateSelectAllCheckbox();
+                    });
+                } else {
+                    MonikitAdmin.showNotification('Delete failed: ' + response.data.message, 'error');
+                }
+            }).fail(function() {
+                MonikitAdmin.showNotification('Delete failed. Please try again.', 'error');
+            }).always(function() {
+                $button.prop('disabled', false).text(originalText);
+            });
+        },
+
+        /**
+         * Generate new API key
+         */
+        generateNewApiKey: function() {
+            var $input = $('#internal_api_key');
+            var $button = $input.siblings('button');
+            var originalText = $button.text();
+            
+            $button.prop('disabled', true).text('Generating...');
+            
+            // Generate a secure random key (64 characters)
+            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            var newKey = '';
+            for (var i = 0; i < 64; i++) {
+                newKey += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            // Update the input field
+            $input.val(newKey);
+            
+            // Show success notification near the API key field
+            var $fieldContainer = $input.closest('tr');
+            MonikitAdmin.showNotificationNear('New API key generated successfully. Remember to save your settings.', 'success', $fieldContainer);
+            
+            $button.prop('disabled', false).text(originalText);
+        }
+    };
+
+    // Global function for the onclick handler
+    window.generateNewApiKey = function() {
+        MonikitAdmin.generateNewApiKey();
     };
 
 })(jQuery); 

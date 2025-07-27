@@ -131,6 +131,14 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'monikit_settings'
 		);
 
+		// Developer API Section
+		add_settings_section(
+			'developer_api_section',
+			__( '🔐 Developer API', 'monikit-app-gdpr-user-data-deletion' ),
+			array( $this, 'developer_api_section_callback' ),
+			'monikit_settings'
+		);
+
 		// Keycloak Fields
 		$keycloak_fields = array(
 			'keycloak_base_url' => __( 'Keycloak Base URL', 'monikit-app-gdpr-user-data-deletion' ),
@@ -215,6 +223,33 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 				'field_type' => 'checkbox',
 				'required' => false,
 				'description' => $this->get_field_description( 'enable_public_deletion' )
+			)
+		);
+
+		// Developer API Fields
+		add_settings_field(
+			'enable_direct_api',
+			__( 'Enable Direct API Access', 'monikit-app-gdpr-user-data-deletion' ),
+			array( $this, 'render_field' ),
+			'monikit_settings',
+			'developer_api_section',
+			array(
+				'field_key' => 'enable_direct_api',
+				'field_type' => 'checkbox',
+				'required' => false,
+				'description' => $this->get_field_description( 'enable_direct_api' )
+			)
+		);
+
+		add_settings_field(
+			'internal_api_key',
+			__( 'Internal API Key', 'monikit-app-gdpr-user-data-deletion' ),
+			array( $this, 'render_api_key_field' ),
+			'monikit_settings',
+			'developer_api_section',
+			array(
+				'field_key' => 'internal_api_key',
+				'description' => $this->get_field_description( 'internal_api_key' )
 			)
 		);
 	}
@@ -304,6 +339,45 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	}
 
 	/**
+	 * Render API key field with generate button
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @param	array $args Field arguments
+	 * @return	void
+	 */
+	public function render_api_key_field( $args ) {
+		$field_key = $args['field_key'];
+		$description = isset( $args['description'] ) ? $args['description'] : '';
+		
+		$current_settings = $this->get_settings();
+		$current_value = isset( $current_settings[ $field_key ] ) ? $current_settings[ $field_key ] : '';
+
+		// If no API key exists, generate one and save it
+		if ( empty( $current_value ) ) {
+			$current_value = MONIGPDR()->api->generate_api_key();
+			// Save the generated key immediately
+			$current_settings[ $field_key ] = $current_value;
+			update_option( $this->option_name, $current_settings );
+		}
+
+		echo '<div style="display: flex; align-items: center; gap: 10px;">';
+		printf(
+			'<input type="text" id="%s" name="%s[%s]" value="%s" class="regular-text" readonly style="font-family: monospace; background-color: #f8f9fa;" />',
+			esc_attr( $field_key ),
+			esc_attr( $this->option_name ),
+			esc_attr( $field_key ),
+			esc_attr( $current_value )
+		);
+		echo '<button type="button" class="button button-secondary" onclick="generateNewApiKey()">' . esc_html__( 'Generate New Key', 'monikit-app-gdpr-user-data-deletion' ) . '</button>';
+		echo '</div>';
+		
+		if ( ! empty( $description ) ) {
+			printf( '<p class="description">%s</p>', wp_kses_post( $description ) );
+		}
+	}
+
+	/**
 	 * Get field description
 	 *
 	 * @access	private
@@ -325,6 +399,8 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'email_html_de' => __( 'HTML email template for German users. Use {confirmation_link} and {confirmation_code} placeholders.', 'monikit-app-gdpr-user-data-deletion' ),
 			'default_language' => __( 'Default language for the plugin', 'monikit-app-gdpr-user-data-deletion' ),
 			'enable_public_deletion' => __( 'Enable the public deletion form for users to request account deletion using the shortcode [monigpdr_deletion_form]', 'monikit-app-gdpr-user-data-deletion' ),
+			'enable_direct_api' => __( 'Enable secure REST API endpoint for programmatic user deletion. This is for internal, server-to-server use only.', 'monikit-app-gdpr-user-data-deletion' ),
+			'internal_api_key' => __( 'Secure API key for authenticating API requests. This key should be kept confidential and used only by authorized services.', 'monikit-app-gdpr-user-data-deletion' ),
 		);
 
 		return isset( $descriptions[ $field_key ] ) ? $descriptions[ $field_key ] : '';
@@ -415,6 +491,37 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		} else {
 			echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
 			echo '<strong>' . esc_html__( '❌ Public Deletion Form is Disabled', 'monikit-app-gdpr-user-data-deletion' ) . '</strong>';
+			echo '</div>';
+		}
+	}
+
+	/**
+	 * Developer API section callback
+	 *
+	 * @access	public
+	 * @since	1.0.0
+	 * @return	void
+	 */
+	public function developer_api_section_callback() {
+		echo '<p>' . esc_html__( 'Configure secure API access for programmatic user deletion. This API is for internal, server-to-server use only.', 'monikit-app-gdpr-user-data-deletion' ) . '</p>';
+		echo '<p><strong>' . esc_html__( 'Endpoint:', 'monikit-app-gdpr-user-data-deletion' ) . '</strong></p>';
+		echo '<code>POST /wp-json/monigpdr/v1/delete</code>';
+		echo '<p><strong>' . esc_html__( 'Parameters:', 'monikit-app-gdpr-user-data-deletion' ) . '</strong></p>';
+		echo '<ul>';
+		echo '<li><code>email</code> - ' . esc_html__( 'User email address (required)', 'monikit-app-gdpr-user-data-deletion' ) . '</li>';
+		echo '<li><code>api_key</code> - ' . esc_html__( 'Internal API key (required)', 'monikit-app-gdpr-user-data-deletion' ) . '</li>';
+		echo '</ul>';
+		
+		$settings = $this->get_settings();
+		$is_enabled = isset( $settings['enable_direct_api'] ) ? $settings['enable_direct_api'] : '0';
+		
+		if ( $is_enabled === '1' ) {
+			echo '<div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
+			echo '<strong>' . esc_html__( '✅ Direct API Access is Enabled', 'monikit-app-gdpr-user-data-deletion' ) . '</strong>';
+			echo '</div>';
+		} else {
+			echo '<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; padding: 12px; margin: 10px 0;">';
+			echo '<strong>' . esc_html__( '❌ Direct API Access is Disabled', 'monikit-app-gdpr-user-data-deletion' ) . '</strong>';
 			echo '</div>';
 		}
 	}
@@ -517,6 +624,24 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			$sanitized_input['enable_public_deletion'] = '1';
 		} else {
 			$sanitized_input['enable_public_deletion'] = '0';
+		}
+
+		// API settings
+		if ( isset( $input['enable_direct_api'] ) ) {
+			$sanitized_input['enable_direct_api'] = '1';
+		} else {
+			$sanitized_input['enable_direct_api'] = '0';
+		}
+
+		// API key - preserve existing if not provided
+		if ( isset( $input['internal_api_key'] ) && ! empty( $input['internal_api_key'] ) ) {
+			$sanitized_input['internal_api_key'] = sanitize_text_field( $input['internal_api_key'] );
+		} else {
+			// Keep existing API key if not provided
+			$current_settings = get_option( $this->option_name, array() );
+			if ( isset( $current_settings['internal_api_key'] ) ) {
+				$sanitized_input['internal_api_key'] = $current_settings['internal_api_key'];
+			}
 		}
 
 		return $sanitized_input;
@@ -653,6 +778,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 			'email_subject_de' => __( 'Bestätigen Sie Ihre Datenlöschungsanfrage', 'monikit-app-gdpr-user-data-deletion' ),
 			'email_html_de' => $this->get_default_email_template_de(),
 			'enable_public_deletion' => '0',
+			'enable_direct_api' => '0',
 		);
 	}
 

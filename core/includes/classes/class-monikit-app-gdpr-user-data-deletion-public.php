@@ -258,6 +258,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		if ( ! is_email( $email ) ) {
 			// Log failed request
 			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Invalid email address provided.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'request' => $_POST
 			) );
 			
@@ -270,6 +271,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		if ( ! $this->is_public_deletion_enabled() ) {
 			// Log failed request
 			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Public deletion not enabled.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'request' => $_POST
 			) );
 			
@@ -298,6 +300,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		if ( $email_sent ) {
 			// Log successful request and email sending
 			MONIGPDR()->logs->log_action( $email, 'request', 'pending', __( 'Deletion request submitted and confirmation email sent. Awaiting user confirmation.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'request' => $_POST
 			) );
 			
@@ -308,6 +311,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		} else {
 			// Log failed email sending
 			MONIGPDR()->logs->log_action( $email, 'request', 'failed', __( 'Failed to send confirmation email.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'request' => $_POST
 			) );
 			
@@ -336,6 +340,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		if ( ! is_email( $email ) || empty( $code ) ) {
 			// Log failed confirmation
 			MONIGPDR()->logs->log_action( $email, 'confirmation', 'failed', __( 'Invalid email or confirmation code provided.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'request' => $_POST
 			) );
 			
@@ -376,6 +381,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			
 			// Log successful deletion from Keycloak
 			MONIGPDR()->logs->log_action( $email, 'deletion', 'success', __( 'Account successfully deleted from Keycloak.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'keycloak_user_id' => $deletion_result['keycloak_user_id'] ?? null,
 				'response' => $deletion_result
 			) );
@@ -390,6 +396,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			
 			// Log failed deletion from Keycloak
 			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', $deletion_result['message'], array(
+				'source' => 'UI',
 				'response' => $deletion_result
 			) );
 			
@@ -633,6 +640,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			
 			// Log successful deletion from Keycloak
 			MONIGPDR()->logs->log_action( $email, 'deletion', 'success', __( 'Account successfully deleted from Keycloak.', 'monikit-app-gdpr-user-data-deletion' ), array(
+				'source' => 'UI',
 				'keycloak_user_id' => $deletion_result['keycloak_user_id'] ?? null,
 				'response' => $deletion_result
 			) );
@@ -657,6 +665,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 			
 			// Log failed deletion from Keycloak
 			MONIGPDR()->logs->log_action( $email, 'deletion', 'failed', $deletion_result['message'], array(
+				'source' => 'UI',
 				'response' => $deletion_result
 			) );
 			
@@ -667,12 +676,12 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 	/**
 	 * Process account deletion
 	 *
-	 * @access	private
+	 * @access	public
 	 * @since	1.0.0
 	 * @param	string	$email	Email address
 	 * @return	array	Result array
 	 */
-	private function process_account_deletion( $email ) {
+	public function process_account_deletion( $email ) {
 		// Get Keycloak settings
 		$settings = MONIGPDR()->admin->get_settings();
 		

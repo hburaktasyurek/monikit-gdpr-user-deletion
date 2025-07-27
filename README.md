@@ -29,6 +29,13 @@ A comprehensive WordPress plugin that enables GDPR-compliant user account deleti
 - **Customizable**: Title, subtitle, and appearance options
 - **AJAX Processing**: Seamless user experience without page reloads
 
+### 🔌 **REST API Integration**
+- **Secure API Endpoint**: `POST /wp-json/monigpdr/v1/delete` for programmatic deletion
+- **Internal API Key**: Secure authentication with configurable API keys
+- **Unified Logging**: Consistent logging with UI-initiated deletions
+- **Error Handling**: Comprehensive error responses and status codes
+- **Production Ready**: Built-in security features and monitoring
+
 ### 📊 **Comprehensive Logging**
 - **Audit Trail**: Complete logging of all deletion activities
 - **Status Tracking**: Request, confirmation, and deletion status monitoring
@@ -156,6 +163,37 @@ $logs = MONIGPDR()->logs->get_logs(array(
 $stats = MONIGPDR()->logs->get_statistics('month');
 ```
 
+### API Usage
+
+#### Enable API Access
+1. Go to **WordPress Admin → Monikit GDPR → Settings**
+2. Navigate to the **🔐 Developer API** section
+3. Check **"Enable Direct API Access"**
+4. Generate an API key using **"Generate New Key"**
+5. Save settings
+
+#### API Endpoint
+```
+POST /wp-json/monigpdr/v1/delete
+```
+
+#### Example Request
+```bash
+curl -X POST "https://your-domain.com/wp-json/monigpdr/v1/delete" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "email=user@example.com&api_key=your_internal_api_key"
+```
+
+#### Example Response
+```json
+{
+    "status": "deleted",
+    "email": "user@example.com"
+}
+```
+
+For complete API documentation, see [API_README.md](API_README.md).
+
 ## 📁 File Structure
 
 ```
@@ -166,6 +204,7 @@ monikit-gdpr-user-deletion/
 │   └── includes/
 │       ├── classes/
 │       │   ├── class-monikit-app-gdpr-user-data-deletion-admin.php
+│       │   ├── class-monikit-app-gdpr-user-data-deletion-api.php
 │       │   ├── class-monikit-app-gdpr-user-data-deletion-public.php
 │       │   ├── class-monikit-app-gdpr-user-data-deletion-helpers.php
 │       │   ├── class-monikit-app-gdpr-user-data-deletion-logs.php
@@ -185,6 +224,7 @@ monikit-gdpr-user-deletion/
 ├── languages/                                  # Translation files
 ├── vendor/                                     # Composer dependencies
 ├── README.md                                   # This file
+├── API_README.md                               # API documentation
 ├── ADMIN_SETTINGS_README.md                    # Admin settings documentation
 ├── SHORTCODE_USAGE.md                          # Shortcode documentation
 └── LOGS_FEATURE_README.md                      # Logging feature documentation
