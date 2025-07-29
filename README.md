@@ -29,12 +29,12 @@ A comprehensive WordPress plugin that enables GDPR-compliant user account deleti
 - **Customizable**: Title, subtitle, and appearance options
 - **AJAX Processing**: Seamless user experience without page reloads
 
-### 🔌 **REST API Integration**
-- **Secure API Endpoint**: `POST /wp-json/monigpdr/v1/delete` for programmatic deletion
-- **Internal API Key**: Secure authentication with configurable API keys
-- **Unified Logging**: Consistent logging with UI-initiated deletions
-- **Error Handling**: Comprehensive error responses and status codes
-- **Production Ready**: Built-in security features and monitoring
+### 🔌 **OAuth2 REST API**
+- **Secure API Endpoint**: `POST /wp-json/monigpdr/v1/delete` for mobile app integration
+- **OAuth2 Authentication**: Uses Keycloak access tokens for secure authentication
+- **Token Validation**: Validates tokens via Keycloak userinfo endpoint
+- **User Identification**: Automatically identifies users from token claims
+- **Mobile App Ready**: Perfect for iOS and Android app integration
 
 ### 📊 **Comprehensive Logging**
 - **Audit Trail**: Complete logging of all deletion activities
@@ -163,14 +163,14 @@ $logs = MONIGPDR()->logs->get_logs(array(
 $stats = MONIGPDR()->logs->get_statistics('month');
 ```
 
-### API Usage
+### OAuth2 API Usage
 
-#### Enable API Access
-1. Go to **WordPress Admin → Monikit GDPR → Settings**
-2. Navigate to the **🔐 Developer API** section
-3. Check **"Enable Direct API Access"**
-4. Generate an API key using **"Generate New Key"**
-5. Save settings
+#### Mobile App Integration
+The API is designed for mobile applications requiring account deletion functionality:
+
+1. **Configure Keycloak** settings in the plugin
+2. **Implement OAuth2 flow** to obtain access tokens from Keycloak
+3. **Use the endpoint** with Bearer token authentication
 
 #### API Endpoint
 ```
@@ -180,19 +180,18 @@ POST /wp-json/monigpdr/v1/delete
 #### Example Request
 ```bash
 curl -X POST "https://your-domain.com/wp-json/monigpdr/v1/delete" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "email=user@example.com&api_key=your_internal_api_key"
+  -H "Authorization: Bearer your_access_token" \
+  -H "Content-Type: application/json"
 ```
 
 #### Example Response
 ```json
 {
-    "status": "deleted",
-    "email": "user@example.com"
+    "status": "deleted"
 }
 ```
 
-For complete API documentation, see [API_README.md](API_README.md).
+Perfect for iOS and Android apps. For complete API documentation, see [API_README.md](API_README.md).
 
 ## 📁 File Structure
 

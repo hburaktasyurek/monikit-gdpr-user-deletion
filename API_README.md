@@ -2,16 +2,17 @@
 
 ## Overview
 
-The Monikit GDPR plugin provides a secure REST API endpoint for programmatic user deletion by email. This API is designed for internal use and integrates seamlessly with the existing Keycloak user management system.
+The Monikit GDPR plugin provides a secure REST API endpoint for programmatic user deletion using OAuth2 access tokens. This API is designed for mobile applications and external services that need to delete user accounts directly using Keycloak-issued access tokens.
 
 ## Features
 
-- **Secure Authentication**: Internal API key authentication
+- **OAuth2 Authentication**: Uses Keycloak access tokens for secure authentication
+- **Token Validation**: Validates tokens via Keycloak userinfo endpoint
+- **User Identification**: Automatically identifies users from token claims
+- **Direct Deletion**: Deletes users directly from Keycloak without email confirmation
 - **Unified Logging**: Consistent logging with UI-initiated deletions
-- **Keycloak Integration**: Direct integration with existing Keycloak deletion methods
-- **Error Handling**: Comprehensive error responses and logging
-- **Rate Limiting**: Built-in WordPress REST API rate limiting
-- **IP Logging**: Automatic client IP address logging for security
+- **Error Handling**: Comprehensive error responses and status codes
+- **Security**: No API keys or credentials required in requests
 
 ## API Endpoint
 
@@ -26,43 +27,38 @@ https://your-domain.com/wp-json/monigpdr/v1/delete
 
 ## Authentication
 
-The API uses an internal API key stored securely in the plugin settings. This key is separate from Keycloak credentials and provides an additional security layer.
+The API uses OAuth2 Bearer tokens issued by Keycloak. The access token must be valid and contain user information (sub claim or email).
 
 ### Required Headers
 ```
-Content-Type: application/x-www-form-urlencoded
+Authorization: Bearer {access_token}
+Content-Type: application/json
 ```
 
-### Required Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `email` | string | Yes | Email address of the user to delete |
-| `api_key` | string | Yes | Internal API key from plugin settings |
+### Request Body
+No body parameters required. The user is identified from the access token.
 
 ## Request Examples
 
 ### cURL Example
 ```bash
 curl -X POST "https://your-domain.com/wp-json/monigpdr/v1/delete" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "email=user@example.com&api_key=your_internal_api_key"
+  -H "Authorization: Bearer your_access_token_here" \
+  -H "Content-Type: application/json"
 ```
 
 ### PHP Example
 ```php
-$data = array(
-    'email' => 'user@example.com',
-    'api_key' => 'your_internal_api_key'
-);
-
+$access_token = 'your_access_token_here';
 $ch = curl_init();
 curl_setopt_array($ch, array(
     CURLOPT_URL => 'https://your-domain.com/wp-json/monigpdr/v1/delete',
     CURLOPT_POST => true,
-    CURLOPT_POSTFIELDS => http_build_query($data),
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded')
+    CURLOPT_HTTPHEADER => array(
+        'Authorization: Bearer ' . $access_token,
+        'Content-Type: application/json'
+    )
 ));
 
 $response = curl_exec($ch);
@@ -72,15 +68,13 @@ curl_close($ch);
 
 ### JavaScript Example
 ```javascript
+const accessToken = 'your_access_token_here';
 const response = await fetch('https://your-domain.com/wp-json/monigpdr/v1/delete', {
     method: 'POST',
     headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-        email: 'user@example.com',
-        api_key: 'your_internal_api_key'
-    })
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+    }
 });
 
 const result = await response.json();
@@ -91,17 +85,16 @@ const result = await response.json();
 ### Success Response (200 OK)
 ```json
 {
-    "status": "deleted",
-    "email": "user@example.com"
+    "status": "deleted"
 }
 ```
 
 ### Error Responses
 
-#### Invalid API Key (401 Unauthorized)
+#### Invalid Token (401 Unauthorized)
 ```json
 {
-    "error": "invalid_api_key"
+    "error": "invalid_token"
 }
 ```
 
@@ -119,70 +112,69 @@ const result = await response.json();
 }
 ```
 
-#### API Disabled (503 Service Unavailable)
-```json
-{
-    "error": "api_disabled"
-}
-```
+## How It Works
+
+### 1. Token Validation
+- The API extracts the access token from the `Authorization: Bearer` header
+- Validates the token using Keycloak's `/auth/realms/{realm}/protocol/openid-connect/userinfo` endpoint
+- Returns 401 if the token is invalid or expired
+
+### 2. User Identification
+- Extracts user information from the token response:
+  - `sub` (Keycloak user ID) - preferred
+  - `email` (user email) - fallback
+- Returns 400 if neither identifier is available
+
+### 3. User Deletion
+- Uses Keycloak admin credentials to delete the user
+- If user ID is available, deletes directly via `/admin/realms/{realm}/users/{user_id}`
+- If only email is available, searches for the user first, then deletes
+- Returns 404 if user is not found in Keycloak
+
+### 4. Logging
+- Logs all operations with source `access_token`
+- Includes user email, IP address, and request details
+- Maintains audit trail for compliance
 
 ## Setup Instructions
 
-### 1. Enable the API
+### 1. Keycloak Configuration
+Ensure your Keycloak server is properly configured:
+- **Base URL**: Your Keycloak server URL
+- **Realm**: Your Keycloak realm name
+- **Client ID**: Your Keycloak client ID
+- **Admin Credentials**: Valid admin username and password
+
+### 2. Plugin Configuration
 1. Go to **WordPress Admin → Monikit GDPR → Settings**
-2. Navigate to the **🔐 Developer API** section
-3. Check **"Enable Direct API Access"**
-4. Click **"Save Settings"**
+2. Configure all Keycloak settings
+3. Test the Keycloak connection
+4. Save settings
 
-### 2. Generate API Key
-1. In the **Internal API Key** field, click **"Generate New Key"**
-2. Copy the generated key (64 characters)
-3. Click **"Save Settings"** to store the key
-
-### 3. Test the API
-Use the provided examples above to test the endpoint with your API key.
-
-## Logging
-
-All API requests are logged with the following characteristics:
-
-### Log Entries
-- **Action**: `Deletion Request` (unified with UI)
-- **Source**: `API` (distinguishes from UI requests)
-- **Status Flow**: `pending` → `success` → `completed`
-
-### Log Data
-- Email address
-- IP address
-- User agent
-- Request timestamp
-- Response status
-- Keycloak user ID (if available)
-
-### Viewing Logs
-1. Go to **WordPress Admin → Monikit GDPR → Logs**
-2. Filter by **Source: API** to view API-only requests
-3. Export logs to CSV for analysis
+### 3. Mobile App Integration
+- Implement OAuth2 flow to obtain access tokens from Keycloak
+- Use the access token in API requests
+- Handle token refresh when needed
 
 ## Security Best Practices
 
-### 1. API Key Management
-- ✅ Generate a strong, unique API key
-- ✅ Store the key securely (not in code)
-- ✅ Rotate the key periodically
-- ✅ Never expose the key in client-side code
+### 1. Token Management
+- ✅ Use short-lived access tokens (15-60 minutes)
+- ✅ Implement token refresh logic
+- ✅ Store tokens securely in mobile apps
+- ✅ Never expose tokens in client-side code
 
 ### 2. Network Security
 - ✅ Use HTTPS in production
-- ✅ Implement IP whitelisting if possible
-- ✅ Monitor API usage patterns
-- ✅ Set up alerts for failed authentication attempts
+- ✅ Validate SSL certificates
+- ✅ Implement certificate pinning in mobile apps
+- ✅ Monitor for suspicious activity
 
 ### 3. Access Control
-- ✅ Limit API access to trusted systems
-- ✅ Implement rate limiting on your application side
-- ✅ Log all API usage for audit purposes
-- ✅ Regularly review access logs
+- ✅ Only users with valid tokens can delete their accounts
+- ✅ Tokens must be issued by your Keycloak server
+- ✅ Implement proper token validation
+- ✅ Log all deletion attempts
 
 ### 4. Error Handling
 - ✅ Don't expose internal error details
@@ -190,112 +182,158 @@ All API requests are logged with the following characteristics:
 - ✅ Implement proper retry logic
 - ✅ Handle network timeouts gracefully
 
-## Production Deployment Checklist
+## Logging
 
-### Before Deployment
-- [ ] Generate a new API key for production
-- [ ] Test the API with production Keycloak settings
-- [ ] Verify HTTPS is enabled
-- [ ] Check firewall/security group settings
-- [ ] Set up monitoring and alerting
+All API requests are logged with the following characteristics:
 
-### After Deployment
-- [ ] Test API connectivity from your application
-- [ ] Verify logging is working correctly
-- [ ] Monitor error rates and response times
-- [ ] Set up automated health checks
-- [ ] Document the API key and endpoint for your team
+### Log Entries
+- **Action**: `Deletion Request` (unified with UI)
+- **Source**: `access_token` (distinguishes from UI requests)
+- **Status Flow**: `pending` → `success` → `completed`
+
+### Log Data
+- User email (if available)
+- Keycloak user ID (if available)
+- IP address
+- User agent
+- Request timestamp
+- Response status
+
+### Viewing Logs
+1. Go to **WordPress Admin → Monikit GDPR → Logs**
+2. Filter by **Source: access_token** to view API-only requests
+3. Export logs to CSV for analysis
+
+## Integration Examples
+
+### Mobile App Integration
+```swift
+// iOS Swift example
+func deleteUserAccount(accessToken: String) async throws {
+    let url = URL(string: "https://your-domain.com/wp-json/monigpdr/v1/delete")!
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    
+    let (data, response) = try await URLSession.shared.data(for: request)
+    
+    if let httpResponse = response as? HTTPURLResponse {
+        switch httpResponse.statusCode {
+        case 200:
+            print("User deleted successfully")
+        case 401:
+            throw APIError.invalidToken
+        case 404:
+            throw APIError.userNotFound
+        default:
+            throw APIError.serverError
+        }
+    }
+}
+```
+
+### Android Integration
+```kotlin
+// Android Kotlin example
+suspend fun deleteUserAccount(accessToken: String): Result<Unit> {
+    return try {
+        val url = "https://your-domain.com/wp-json/monigpdr/v1/delete"
+        val response = client.post(url) {
+            header("Authorization", "Bearer $accessToken")
+            header("Content-Type", "application/json")
+        }
+        
+        when (response.status.value) {
+            200 -> Result.success(Unit)
+            401 -> Result.failure(APIException("Invalid token"))
+            404 -> Result.failure(APIException("User not found"))
+            else -> Result.failure(APIException("Server error"))
+        }
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+}
+```
+
+### Web Application Integration
+```javascript
+// JavaScript/TypeScript example
+async function deleteUserAccount(accessToken: string): Promise<void> {
+    const response = await fetch('https://your-domain.com/wp-json/monigpdr/v1/delete', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        }
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        switch (response.status) {
+            case 401:
+                throw new Error('Invalid token');
+            case 404:
+                throw new Error('User not found');
+            default:
+                throw new Error('Server error');
+        }
+    }
+    
+    console.log('User deleted successfully');
+}
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### 401 Unauthorized
-- Check if the API key is correct
-- Verify the API is enabled in settings
-- Ensure the key hasn't been regenerated
+- Check if the access token is valid and not expired
+- Verify the token was issued by your Keycloak server
+- Ensure the token contains user information (sub or email)
 
 #### 404 Not Found
 - Verify the user exists in Keycloak
-- Check the email format
-- Ensure Keycloak is accessible
+- Check if the user was already deleted
+- Ensure Keycloak admin credentials are correct
 
 #### 500 Internal Server Error
 - Check Keycloak connectivity
-- Verify Keycloak credentials
+- Verify Keycloak admin credentials
 - Review server error logs
 
-#### 503 Service Unavailable
-- Enable the API in plugin settings
-- Check if the plugin is active
-- Verify WordPress REST API is working
+### Debug Steps
+1. **Check Token**: Verify the access token is valid using Keycloak's userinfo endpoint
+2. **Test Keycloak**: Use the "Test Keycloak Connection" button in plugin settings
+3. **Review Logs**: Check the logs section for detailed error messages
+4. **Check Network**: Ensure your application can reach the WordPress site
 
-### Debug Mode
-For troubleshooting, enable WordPress debug mode and check the error logs for detailed information.
+## Compliance
 
-## Integration Examples
+### GDPR Compliance
+- ✅ User-initiated deletion (requires valid access token)
+- ✅ Complete audit trail
+- ✅ Secure authentication
+- ✅ No data retention beyond deletion
 
-### WordPress Integration
-```php
-// In your WordPress theme or plugin
-function delete_user_via_api($email) {
-    $api_key = get_option('monikit_settings')['internal_api_key'];
-    $response = wp_remote_post(home_url('/wp-json/monigpdr/v1/delete'), array(
-        'body' => array(
-            'email' => $email,
-            'api_key' => $api_key
-        )
-    ));
-    
-    return wp_remote_retrieve_body($response);
-}
-```
-
-### External Application Integration
-```php
-// In your external application
-class MonikitGDPRClient {
-    private $api_url;
-    private $api_key;
-    
-    public function __construct($api_url, $api_key) {
-        $this->api_url = $api_url;
-        $this->api_key = $api_key;
-    }
-    
-    public function deleteUser($email) {
-        $ch = curl_init();
-        curl_setopt_array($ch, array(
-            CURLOPT_URL => $this->api_url,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query(array(
-                'email' => $email,
-                'api_key' => $this->api_key
-            )),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => array('Content-Type: application/x-www-form-urlencoded')
-        ));
-        
-        $response = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        
-        return array(
-            'status_code' => $http_code,
-            'response' => json_decode($response, true)
-        );
-    }
-}
-```
+### Apple App Store Compliance
+- ✅ OAuth2-based authentication
+- ✅ User-initiated account deletion
+- ✅ No additional authentication required
+- ✅ Immediate account deletion
 
 ## Support
 
 For technical support or questions about the API:
 
 1. Check the plugin logs for detailed error information
-2. Review this documentation
-3. Contact the plugin developer with specific error details
+2. Verify Keycloak configuration is correct
+3. Test with valid access tokens
+4. Contact the plugin developer with specific error details
 
 ## Version History
 
-- **v1.0.0**: Initial API release with unified logging system 
+- **v1.2.0**: OAuth2-based API with access token authentication
+- **v1.1.0**: Internal API key-based authentication (deprecated)
+- **v1.0.0**: Initial release with UI-only deletion 

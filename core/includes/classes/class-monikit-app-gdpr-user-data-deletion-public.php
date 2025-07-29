@@ -689,6 +689,7 @@ class Monikit_App_Gdpr_User_Data_Deletion_Public {
 		if ( empty( $settings['keycloak_base_url'] ) || 
 			 empty( $settings['keycloak_realm'] ) || 
 			 empty( $settings['keycloak_client_id'] ) || 
+			 empty( $settings['keycloak_client_secret'] ) || 
 			 empty( $settings['keycloak_admin_username'] ) || 
 			 empty( $settings['keycloak_admin_password'] ) ) {
 			

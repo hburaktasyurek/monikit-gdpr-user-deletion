@@ -1026,32 +1026,7 @@
             });
         },
 
-        /**
-         * Generate new API key
-         */
-        generateNewApiKey: function() {
-            var $input = $('#internal_api_key');
-            var $button = $input.siblings('button');
-            var originalText = $button.text();
-            
-            $button.prop('disabled', true).text('Generating...');
-            
-            // Generate a secure random key (64 characters)
-            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            var newKey = '';
-            for (var i = 0; i < 64; i++) {
-                newKey += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            
-            // Update the input field
-            $input.val(newKey);
-            
-            // Show success notification near the API key field
-            var $fieldContainer = $input.closest('tr');
-            MonikitAdmin.showNotificationNear('New API key generated successfully. Remember to save your settings.', 'success', $fieldContainer);
-            
-            $button.prop('disabled', false).text(originalText);
-        }
+        
     };
 
     // Global function for the onclick handler
