@@ -136,15 +136,17 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		// Keycloak Fields
 		$keycloak_fields = array(
 			'keycloak_base_url' => __( 'Keycloak Base URL', 'monikit-app-gdpr-user-data-deletion' ),
-			'keycloak_realm' => __( 'Realm', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_realm' => __( 'Patient Realm', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_contact_realm' => __( 'Contact Realm', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_client_id' => __( 'Client ID', 'monikit-app-gdpr-user-data-deletion' ),
-			'keycloak_client_secret' => __( 'Client Secret', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_client_secret' => __( 'Patient Client Secret', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_contact_client_secret' => __( 'Contact Client Secret', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_admin_username' => __( 'Admin Username', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_admin_password' => __( 'Admin Password', 'monikit-app-gdpr-user-data-deletion' ),
 		);
 
 		foreach ( $keycloak_fields as $field_key => $field_label ) {
-			$field_type = in_array( $field_key, array( 'keycloak_client_secret', 'keycloak_admin_password' ) ) ? 'password' : 'text';
+			$field_type = in_array( $field_key, array( 'keycloak_client_secret', 'keycloak_contact_client_secret', 'keycloak_admin_password' ) ) ? 'password' : 'text';
 			$is_required = in_array( $field_key, array( 'keycloak_base_url', 'keycloak_realm', 'keycloak_client_id', 'keycloak_client_secret', 'keycloak_admin_username', 'keycloak_admin_password' ) );
 			add_settings_field(
 				$field_key,
@@ -320,9 +322,11 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 	private function get_field_description( $field_key ) {
 		$descriptions = array(
 			'keycloak_base_url' => __( 'Example: https://testserver.monikit.com/', 'monikit-app-gdpr-user-data-deletion' ),
-			'keycloak_realm' => __( 'Example: Patient', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_realm' => __( 'Example: Patient (for patient user deletions)', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_contact_realm' => __( 'Example: Contact (for contact user deletions)', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_client_id' => __( 'Example: admin-cli', 'monikit-app-gdpr-user-data-deletion' ),
-			'keycloak_client_secret' => __( 'Client secret (required for OAuth2 API)', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_client_secret' => __( 'Patient client secret (required for OAuth2 API)', 'monikit-app-gdpr-user-data-deletion' ),
+			'keycloak_contact_client_secret' => __( 'Contact client secret (required for OAuth2 API)', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_admin_username' => __( 'Keycloak admin API username', 'monikit-app-gdpr-user-data-deletion' ),
 			'keycloak_admin_password' => __( 'Password for API access', 'monikit-app-gdpr-user-data-deletion' ),
 			'email_subject_en' => __( 'Email subject for English users', 'monikit-app-gdpr-user-data-deletion' ),
@@ -473,8 +477,10 @@ class Monikit_App_Gdpr_User_Data_Deletion_Admin {
 		$keycloak_fields = array(
 			'keycloak_base_url',
 			'keycloak_realm',
+			'keycloak_contact_realm',
 			'keycloak_client_id',
 			'keycloak_client_secret',
+			'keycloak_contact_client_secret',
 			'keycloak_admin_username',
 			'keycloak_admin_password',
 		);

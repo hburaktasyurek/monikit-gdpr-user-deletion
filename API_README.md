@@ -14,15 +14,22 @@ The Monikit GDPR plugin provides a secure REST API endpoint for programmatic use
 - **Error Handling**: Comprehensive error responses and status codes
 - **Security**: No API keys or credentials required in requests
 
-## API Endpoint
+## API Endpoints
 
+### Patient Deletion
 ```
 POST /wp-json/monigpdr/v1/delete
 ```
 
-### Base URL
+### Contact Deletion
 ```
-https://your-domain.com/wp-json/monigpdr/v1/delete
+POST /wp-json/monigpdr/v1/delete/contact
+```
+
+### Base URLs
+```
+Patient: https://your-domain.com/wp-json/monigpdr/v1/delete
+Contact: https://your-domain.com/wp-json/monigpdr/v1/delete/contact
 ```
 
 ## Authentication
@@ -40,14 +47,25 @@ No body parameters required. The user is identified from the access token.
 
 ## Request Examples
 
-### cURL Example
+### cURL Examples
+
+#### Patient Deletion
 ```bash
 curl -X POST "https://your-domain.com/wp-json/monigpdr/v1/delete" \
   -H "Authorization: Bearer your_access_token_here" \
   -H "Content-Type: application/json"
 ```
 
-### PHP Example
+#### Contact Deletion
+```bash
+curl -X POST "https://your-domain.com/wp-json/monigpdr/v1/delete/contact" \
+  -H "Authorization: Bearer your_access_token_here" \
+  -H "Content-Type: application/json"
+```
+
+### PHP Examples
+
+#### Patient Deletion
 ```php
 $access_token = 'your_access_token_here';
 $ch = curl_init();
@@ -66,10 +84,45 @@ $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 curl_close($ch);
 ```
 
-### JavaScript Example
+#### Contact Deletion
+```php
+$access_token = 'your_access_token_here';
+$ch = curl_init();
+curl_setopt_array($ch, array(
+    CURLOPT_URL => 'https://your-domain.com/wp-json/monigpdr/v1/delete/contact',
+    CURLOPT_POST => true,
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_HTTPHEADER => array(
+        'Authorization: Bearer ' . $access_token,
+        'Content-Type: application/json'
+    )
+));
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
+```
+
+### JavaScript Examples
+
+#### Patient Deletion
 ```javascript
 const accessToken = 'your_access_token_here';
 const response = await fetch('https://your-domain.com/wp-json/monigpdr/v1/delete', {
+    method: 'POST',
+    headers: {
+        'Authorization': 'Bearer ' + accessToken,
+        'Content-Type': 'application/json'
+    }
+});
+
+const result = await response.json();
+```
+
+#### Contact Deletion
+```javascript
+const accessToken = 'your_access_token_here';
+const response = await fetch('https://your-domain.com/wp-json/monigpdr/v1/delete/contact', {
     method: 'POST',
     headers: {
         'Authorization': 'Bearer ' + accessToken,
@@ -132,16 +185,28 @@ const result = await response.json();
 - Returns 404 if user is not found in Keycloak
 
 ### 4. Logging
-- Logs all operations with source `access_token`
+- Logs all operations with source `access_token` and realm information
 - Includes user email, IP address, and request details
 - Maintains audit trail for compliance
+
+## Realm Configuration
+
+The plugin supports two separate realms:
+
+- **Patient Realm**: Used for patient user deletions via `/wp-json/monigpdr/v1/delete`
+- **Contact Realm**: Used for contact user deletions via `/wp-json/monigpdr/v1/delete/contact`
+
+Both realms must be configured in the plugin settings:
+- Patient Realm: `keycloak_realm` setting
+- Contact Realm: `keycloak_contact_realm` setting
 
 ## Setup Instructions
 
 ### 1. Keycloak Configuration
 Ensure your Keycloak server is properly configured:
 - **Base URL**: Your Keycloak server URL
-- **Realm**: Your Keycloak realm name
+- **Patient Realm**: Your Patient realm name
+- **Contact Realm**: Your Contact realm name
 - **Client ID**: Your Keycloak client ID
 - **Admin Credentials**: Valid admin username and password
 
